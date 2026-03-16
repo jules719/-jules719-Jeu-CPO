@@ -62,7 +62,7 @@ export default class gameplay extends Phaser.Scene {
 
     this.createGround();
 
-    this.player = this.physics.add.sprite(120, 400, "dude");
+    this.player = this.physics.add.sprite(120, 470, "dude");
     this.player.setScale(1.3);
     this.player.setCollideWorldBounds(false);
     this.player.body.setSize(20, 40);
@@ -70,8 +70,9 @@ export default class gameplay extends Phaser.Scene {
 
     this.applySelectedSkin();
 
-    // Collider with Tiled map layer
+    // Collider with both Tiled map layer and platforms
     this.physics.add.collider(this.player, layer);
+    this.physics.add.collider(this.player, this.platforms);
 
     this.createAnimations();
     this.player.anims.play("run", true);
