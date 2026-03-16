@@ -45,6 +45,9 @@ export default class gameplay extends Phaser.Scene {
     const layer = map.createLayer(1, tileset, 0, 0);
     layer.setScrollFactor(1);
     layer.setOrigin(0, 0);
+    
+    // Enable collision on tiles marked as "estSolide"
+    layer.setCollisionByProperty({ estSolide: true });
 
     this.holes = [
       { start: 1100, end: 1280 },
@@ -59,7 +62,7 @@ export default class gameplay extends Phaser.Scene {
 
     this.createGround();
 
-    this.player = this.physics.add.sprite(120, 470, "dude");
+    this.player = this.physics.add.sprite(120, 400, "dude");
     this.player.setScale(1.3);
     this.player.setCollideWorldBounds(false);
     this.player.body.setSize(20, 40);
@@ -67,7 +70,8 @@ export default class gameplay extends Phaser.Scene {
 
     this.applySelectedSkin();
 
-    this.physics.add.collider(this.player, this.platforms);
+    // Collider with Tiled map layer
+    this.physics.add.collider(this.player, layer);
 
     this.createAnimations();
     this.player.anims.play("run", true);
