@@ -4,12 +4,24 @@ export default class accueil extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("sky", "src/assets/sky.png");
+    this.load.image("sky", "./assets/sky.png");
   }
 
   create() {
     if (this.registry.get("money") === undefined) {
       this.registry.set("money", 0);
+    }
+
+    if (this.registry.get("selectedSkin") === undefined) {
+      this.registry.set("selectedSkin", "normal");
+    }
+
+    if (this.registry.get("coinMultiplierReady") === undefined) {
+      this.registry.set("coinMultiplierReady", false);
+    }
+
+    if (this.registry.get("extraLifeReady") === undefined) {
+      this.registry.set("extraLifeReady", false);
     }
 
     this.add.image(400, 300, "sky").setDisplaySize(800, 600);
