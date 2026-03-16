@@ -4,12 +4,13 @@ export default class gameplay extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("sky", "src/assets/sky.png");
-    this.load.image("platform", "src/assets/platform.png");
-    this.load.image("star", "src/assets/star.png");
-    this.load.image("bomb", "src/assets/bomb.png");
-    this.load.image("bite", "src/assets/bite.png");
-    this.load.spritesheet("dude", "src/assets/dude.png", {
+    this.load.image("sky", "./assets/sky.png");
+    this.load.image("platform", "./assets/platform.png");
+    this.load.image("star", "./assets/star.png");
+    this.load.image("bomb", "./assets/bomb.png");
+    this.load.image("bite", "./assets/bite.png");
+
+    this.load.spritesheet("dude", "./assets/dude.png", {
       frameWidth: 32,
       frameHeight: 48
     });
@@ -23,6 +24,13 @@ export default class gameplay extends Phaser.Scene {
     this.hordeCount = 1;
     this.followers = [];
     this.trail = [];
+
+    this.extraLives = this.registry.get("extraLifeReady") ? 1 : 0;
+    this.registry.set("extraLifeReady", false);
+
+    this.coinMultiplierActive = this.registry.get("coinMultiplierReady");
+    this.registry.set("coinMultiplierReady", false);
+    this.coinMultiplierEndTime = 0;
 
     this.physics.world.setBounds(0, 0, this.mapWidth, 700);
     this.cameras.main.setBounds(0, 0, this.mapWidth, 600);
@@ -47,6 +55,8 @@ export default class gameplay extends Phaser.Scene {
     this.player.setCollideWorldBounds(false);
     this.player.body.setSize(20, 40);
     this.player.body.setOffset(6, 8);
+
+    this.applySelectedSkin();
 
     this.physics.add.collider(this.player, this.platforms);
 
@@ -88,14 +98,30 @@ export default class gameplay extends Phaser.Scene {
       strokeThickness: 5
     }).setScrollFactor(0);
 
-    this.infoText = this.add.text(20, 90, "ESPACE / FLECHE HAUT = SAUT", {
+    this.livesText = this.add.text(20, 90, "Vies : " + (1 + this.extraLives), {
+      fontSize: "24px",
+      color: "#ffffff",
+      fontStyle: "bold",
+      stroke: "#000000",
+      strokeThickness: 5
+    }).setScrollFactor(0);
+
+    this.multiplierText = this.add.text(20, 125, "", {
+      fontSize: "22px",
+      color: "#ffe66d",
+      fontStyle: "bold",
+      stroke: "#000000",
+      strokeThickness: 5
+    }).setScrollFactor(0);
+
+    this.infoText = this.add.text(20, 160, "ESPACE / FLECHE HAUT = SAUT", {
       fontSize: "18px",
       color: "#ffffff",
       stroke: "#000000",
       strokeThickness: 4
     }).setScrollFactor(0);
 
-    this.backText = this.add.text(20, 115, "ECHAP = RETOUR AUX PORTES", {
+    this.backText = this.add.text(20, 185, "ECHAP = RETOUR AUX PORTES", {
       fontSize: "18px",
       color: "#ffffff",
       stroke: "#000000",
@@ -119,6 +145,21 @@ export default class gameplay extends Phaser.Scene {
       strokeThickness: 5,
       align: "center"
     }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+
+    if (this.coinMultiplierActive) {
+      this.coinMultiplierEndTime = this.time.now + 15000;
+      this.multiplierText.setText("x2 PIECES : 15");
+    }
+  }
+
+  applySelectedSkin() {
+    const skin = this.registry.get("selectedSkin");
+
+    if (skin === "zombie") {
+      this.player.setTint(0x66ff66);
+    } else {
+      this.player.clearTint();
+    }
   }
 
   createAnimations() {
@@ -192,19 +233,14 @@ export default class gameplay extends Phaser.Scene {
     const coinPositions = [
       [500, 500], [620, 500], [740, 500],
       [920, 500], [980, 500], [1040, 500],
-
       [1450, 500], [1560, 410], [1660, 410],
       [1850, 500], [1960, 500],
-
       [2450, 500], [2600, 360], [2680, 360], [2760, 360],
       [3000, 500], [3140, 500],
-
       [3600, 500], [3760, 400], [3840, 400], [3920, 400],
       [4200, 500], [4350, 500],
-
       [4900, 500], [5070, 340], [5150, 340],
       [5400, 500], [5520, 500],
-
       [6200, 500], [6400, 370], [6480, 370], [6560, 370]
     ];
 
@@ -246,8 +282,13 @@ export default class gameplay extends Phaser.Scene {
   collectCoin(player, coin) {
     coin.destroy();
 
+    let value = 1;
+    if (this.coinMultiplierActive && this.time.now < this.coinMultiplierEndTime) {
+      value = 2;
+    }
+
     const currentMoney = this.registry.get("money");
-    this.registry.set("money", currentMoney + 1);
+    this.registry.set("money", currentMoney + value);
     this.moneyText.setText("Argent : " + this.registry.get("money"));
   }
 
@@ -259,11 +300,33 @@ export default class gameplay extends Phaser.Scene {
     const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, "dude");
     follower.setScale(1.2);
     follower.anims.play("run", true);
+
+    if (this.registry.get("selectedSkin") === "zombie") {
+      follower.setTint(0x66ff66);
+    }
+
     this.followers.push(follower);
   }
 
+  loseLifeOrGameOver(reasonText) {
+    if (this.extraLives > 0) {
+      this.extraLives -= 1;
+      this.livesText.setText("Vies : " + (1 + this.extraLives));
+
+      this.player.setPosition(this.player.x - 120, 420);
+      this.player.setVelocity(0, 0);
+      return;
+    }
+
+    this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
+  }
+
   hitBomb() {
-    this.triggerGameOver("GAME OVER", "Tu as touche une bombe\nR = recommencer");
+    if (this.isGameOver) {
+      return;
+    }
+
+    this.loseLifeOrGameOver("Tu as touche une bombe");
   }
 
   triggerGameOver(title, subtitle) {
@@ -302,6 +365,19 @@ export default class gameplay extends Phaser.Scene {
     }
   }
 
+  updateMultiplierUI() {
+    if (this.coinMultiplierActive) {
+      const remaining = Math.max(0, Math.ceil((this.coinMultiplierEndTime - this.time.now) / 1000));
+
+      if (remaining > 0) {
+        this.multiplierText.setText("x2 PIECES : " + remaining);
+      } else {
+        this.coinMultiplierActive = false;
+        this.multiplierText.setText("");
+      }
+    }
+  }
+
   update() {
     if (Phaser.Input.Keyboard.JustDown(this.keyEsc)) {
       this.scene.start("choixPortes");
@@ -333,15 +409,10 @@ export default class gameplay extends Phaser.Scene {
     }
 
     this.updateFollowers();
-
-    // Vérifier si le joueur est dans un trou
-    if (this.isPlayerInHole()) {
-      this.triggerGameOver("GAME OVER", "Tu es tombe dans un trou\nR = recommencer");
-      return;
-    }
+    this.updateMultiplierUI();
 
     if (this.player.y > 650) {
-      this.triggerGameOver("GAME OVER", "Tu es tombe dans un trou\nR = recommencer");
+      this.loseLifeOrGameOver("Tu es tombe dans un trou");
     }
 
     if (this.player.x >= this.mapWidth - 120) {
@@ -350,15 +421,5 @@ export default class gameplay extends Phaser.Scene {
       this.gameOverText.setText("NIVEAU TERMINE");
       this.subText.setText("ECHAP = retour aux portes");
     }
-  }
-
-  isPlayerInHole() {
-    for (let i = 0; i < this.holes.length; i++) {
-      const hole = this.holes[i];
-      if (this.player.x > hole.start && this.player.x < hole.end && this.player.y > 550) {
-        return true;
-      }
-    }
-    return false;
   }
 }
