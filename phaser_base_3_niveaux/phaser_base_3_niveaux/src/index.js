@@ -33,3 +33,4 @@ var game = new Phaser.Game(config);
 game.scene.start("selection");
 
 // Test de commit Loan
+loan 
