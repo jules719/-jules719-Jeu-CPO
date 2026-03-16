@@ -33,11 +33,11 @@ export default class gameplay extends Phaser.Scene {
 
     this.platforms = this.physics.add.staticGroup();
     this.holes = [
-      { start: 1100, end: 1280 },
-      { start: 2100, end: 2300 },
-      { start: 3250, end: 3450 },
-      { start: 4550, end: 4720 },
-      { start: 5800, end: 6000 }
+      { start: 1100, end: 1180 },
+      { start: 1900, end: 1980 },
+      { start: 3250, end: 3330 },
+      { start: 4550, end: 4630 },
+      { start: 5800, end: 5880 }
     ];
 
     this.createGround();
@@ -238,7 +238,7 @@ export default class gameplay extends Phaser.Scene {
     ];
 
     bombPositions.forEach((pos) => {
-      const bomb = this.bombs.create(pos[0], pos[1], "bomb").setScale(0.8);
+      const bomb = this.bombs.create(pos[0], pos[1], "star").setScale(1.2);
       bomb.refreshBody();
     });
   }
@@ -263,7 +263,7 @@ export default class gameplay extends Phaser.Scene {
   }
 
   hitBomb() {
-    this.triggerGameOver("GAME OVER", "Tu as touche une bombe\nR = recommencer");
+    this.triggerGameOver("GAME OVER", "Tu as touche une etoile piege\nR = recommencer");
   }
 
   triggerGameOver(title, subtitle) {
