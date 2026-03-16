@@ -42,7 +42,7 @@ export default class gameplay extends Phaser.Scene {
     // Load and display the Tiled map
     const map = this.make.tilemap({ key: "map" });
     const tileset = map.addTilesetImage("zombie_level1_daylight_soviet_abandoned", "tileset");
-    const layer = map.createLayer(0, tileset, 0, 0);
+    const layer = map.createLayer(1, tileset, 0, 0);
     layer.setScrollFactor(1);
     layer.setOrigin(0, 0);
 
