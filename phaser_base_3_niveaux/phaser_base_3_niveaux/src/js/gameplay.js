@@ -9,6 +9,10 @@ export default class gameplay extends Phaser.Scene {
     this.load.image("star", "src/assets/star.png");
     this.load.image("bomb", "src/assets/bomb.png");
     this.load.image("bite", "src/assets/bite.png");
+    
+    // Load Tiled map assets
+    this.load.image("tileset", "src/assets/zombie_level1_daylight_soviet_abandoned.png");
+    this.load.tilemapTiledJSON("map", "src/assets/tiled map 1 soleil projet jeu.tmj");
 
     this.load.spritesheet("dude", "src/assets/dude.png", {
       frameWidth: 32,
@@ -35,10 +39,12 @@ export default class gameplay extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, this.mapWidth, 700);
     this.cameras.main.setBounds(0, 0, this.mapWidth, 600);
 
-    // Créer les backgrounds qui scrollent avec la caméra
-    for (let x = 0; x < this.mapWidth; x += 800) {
-      this.add.image(x, 300, "sky").setDisplaySize(800, 600).setScrollFactor(1).setOrigin(0, 0.5);
-    }
+    // Load and display the Tiled map
+    const map = this.make.tilemap({ key: "map" });
+    const tileset = map.addTilesetImage("zombie_level1_daylight_soviet_abandoned", "tileset");
+    const layer = map.createLayer(0, tileset, 0, 0);
+    layer.setScrollFactor(1);
+    layer.setOrigin(0, 0);
 
     this.holes = [
       { start: 1100, end: 1280 },
