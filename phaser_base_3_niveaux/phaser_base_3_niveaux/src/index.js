@@ -1,33 +1,24 @@
-// chargement des librairies
-import selection from "/src/js/selection.js";
-import niveau1 from "/src/js/niveau1.js";
-import niveau2 from "/src/js/niveau2.js";
-import niveau3 from "/src/js/niveau3.js";
+import accueil from "./js/accueil.js";
+import choixPortes from "./js/choixPortes.js";
+import armurerie from "./js/armurerie.js";
+import gameplay from "./js/gameplay.js";
 
-// configuration générale du jeu
-var config = {
+const config = {
   type: Phaser.AUTO,
-  width: 800, // largeur en pixels
-  height: 600, // hauteur en pixels
-   scale: {
-        // Or set parent divId here
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH
-   },
+  width: 800,
+  height: 600,
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH
+  },
   physics: {
-    // définition des parametres physiques
-    default: "arcade", // mode arcade : le plus simple : des rectangles pour gérer les collisions. Pas de pentes
+    default: "arcade",
     arcade: {
-      // parametres du mode arcade
-      gravity: {
-        y: 300 // gravité verticale : acceleration ddes corps en pixels par seconde
-      },
-      debug: true // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
+      gravity: { y: 1200 },
+      debug: false
     }
   },
-  scene: [selection, niveau1, niveau2, niveau3]
+  scene: [accueil, choixPortes, armurerie, gameplay]
 };
 
-// création et lancement du jeu
-var game = new Phaser.Game(config);
-game.scene.start("selection");
+new Phaser.Game(config);
