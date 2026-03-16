@@ -19,7 +19,7 @@ export default class gameplay extends Phaser.Scene {
     this.isGameOver = false;
     this.mapWidth = 7000;
     this.speed = 230;
-    this.jumpPower = -520;
+    this.jumpPower = -700;
     this.hordeCount = 1;
     this.followers = [];
     this.trail = [];
