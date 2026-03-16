@@ -4,13 +4,13 @@ export default class gameplay extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("sky", "./assets/sky.png");
-    this.load.image("platform", "./assets/platform.png");
-    this.load.image("star", "./assets/star.png");
-    this.load.image("bomb", "./assets/bomb.png");
-    this.load.image("bite", "./assets/bite.png");
+    this.load.image("sky", "src/assets/sky.png");
+    this.load.image("platform", "src/assets/platform.png");
+    this.load.image("star", "src/assets/star.png");
+    this.load.image("bomb", "src/assets/bomb.png");
+    this.load.image("bite", "src/assets/bite.png");
 
-    this.load.spritesheet("dude", "./assets/dude.png", {
+    this.load.spritesheet("dude", "src/assets/dude.png", {
       frameWidth: 32,
       frameHeight: 48
     });
@@ -20,7 +20,7 @@ export default class gameplay extends Phaser.Scene {
     this.isGameOver = false;
     this.mapWidth = 7000;
     this.speed = 230;
-    this.jumpPower = -520;
+    this.jumpPower = -700;
     this.hordeCount = 1;
     this.followers = [];
     this.trail = [];
@@ -35,11 +35,11 @@ export default class gameplay extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, this.mapWidth, 700);
     this.cameras.main.setBounds(0, 0, this.mapWidth, 600);
 
-    for (let x = 400; x < this.mapWidth; x += 800) {
-      this.add.image(x, 300, "sky").setDisplaySize(800, 600);
+    // Créer les backgrounds qui scrollent avec la caméra
+    for (let x = 0; x < this.mapWidth; x += 800) {
+      this.add.image(x, 300, "sky").setDisplaySize(800, 600).setScrollFactor(1).setOrigin(0, 0.5);
     }
 
-    this.platforms = this.physics.add.staticGroup();
     this.holes = [
       { start: 1100, end: 1280 },
       { start: 2100, end: 2300 },
@@ -47,6 +47,9 @@ export default class gameplay extends Phaser.Scene {
       { start: 4550, end: 4720 },
       { start: 5800, end: 6000 }
     ];
+
+    this.platforms = this.physics.add.staticGroup();
+    this.groundVisuals = [];
 
     this.createGround();
 
@@ -114,14 +117,14 @@ export default class gameplay extends Phaser.Scene {
       strokeThickness: 5
     }).setScrollFactor(0);
 
-    this.infoText = this.add.text(20, 160, "ESPACE / FLECHE HAUT = SAUT", {
+    this.infoText = this.add.text(20, 160, "ESPACE / HAUT = SAUT", {
       fontSize: "18px",
       color: "#ffffff",
       stroke: "#000000",
       strokeThickness: 4
     }).setScrollFactor(0);
 
-    this.backText = this.add.text(20, 185, "ECHAP = RETOUR AUX PORTES", {
+    this.backText = this.add.text(20, 185, "ECHAP = RETOUR", {
       fontSize: "18px",
       color: "#ffffff",
       stroke: "#000000",
@@ -182,40 +185,66 @@ export default class gameplay extends Phaser.Scene {
   }
 
   createGround() {
-    const segmentWidth = 128;
-    const groundY = 568;
+    const segmentWidth = 140;
+    const groundY = 540;
+    const groundHeight = 60;
 
     for (let x = 0; x < this.mapWidth; x += segmentWidth) {
       if (this.isInsideHole(x, x + segmentWidth)) {
         continue;
       }
 
-      const block = this.platforms.create(x, groundY, "platform").setOrigin(0, 0);
-      block.refreshBody();
+      const visual = this.add.rectangle(
+        x + segmentWidth / 2,
+        groundY + groundHeight / 2,
+        segmentWidth,
+        groundHeight,
+        0x2d6a4f
+      );
+      this.groundVisuals.push(visual);
 
-      if (block.width !== segmentWidth || block.height !== 32) {
-        block.displayWidth = segmentWidth;
-        block.displayHeight = 32;
-        block.refreshBody();
-      }
+      const hitbox = this.add.rectangle(
+        x + segmentWidth / 2,
+        groundY + groundHeight / 2,
+        segmentWidth,
+        groundHeight,
+        0x000000,
+        0
+      );
+
+      this.physics.add.existing(hitbox, true);
+      this.platforms.add(hitbox);
     }
 
     const highPlatforms = [
-      { x: 1500, y: 470, width: 180 },
-      { x: 2600, y: 420, width: 180 },
-      { x: 3750, y: 450, width: 200 },
-      { x: 5050, y: 400, width: 180 },
-      { x: 6400, y: 430, width: 180 }
+      { x: 1500, y: 455, width: 180, height: 22 },
+      { x: 2600, y: 405, width: 180, height: 22 },
+      { x: 3750, y: 435, width: 200, height: 22 },
+      { x: 5050, y: 385, width: 180, height: 22 },
+      { x: 6400, y: 415, width: 180, height: 22 }
     ];
 
     highPlatforms.forEach((p) => {
-      const count = Math.floor(p.width / 64);
-      for (let i = 0; i < count; i++) {
-        const block = this.platforms.create(p.x + i * 64, p.y, "platform").setOrigin(0, 0);
-        block.displayWidth = 64;
-        block.displayHeight = 28;
-        block.refreshBody();
-      }
+      const visual = this.add.rectangle(
+        p.x + p.width / 2,
+        p.y + p.height / 2,
+        p.width,
+        p.height,
+        0x8d6e63
+      );
+      this.groundVisuals.push(visual);
+
+      const hitbox = this.add.rectangle(
+        p.x + p.width / 2,
+        p.y + p.height / 2,
+        p.width,
+        p.height,
+        0x000000,
+        0
+      );
+
+      this.physics.add.existing(hitbox, true);
+      this.platforms.add(hitbox);
     });
   }
 
@@ -231,17 +260,17 @@ export default class gameplay extends Phaser.Scene {
 
   placeCoins() {
     const coinPositions = [
-      [500, 500], [620, 500], [740, 500],
-      [920, 500], [980, 500], [1040, 500],
-      [1450, 500], [1560, 410], [1660, 410],
-      [1850, 500], [1960, 500],
-      [2450, 500], [2600, 360], [2680, 360], [2760, 360],
-      [3000, 500], [3140, 500],
-      [3600, 500], [3760, 400], [3840, 400], [3920, 400],
-      [4200, 500], [4350, 500],
-      [4900, 500], [5070, 340], [5150, 340],
-      [5400, 500], [5520, 500],
-      [6200, 500], [6400, 370], [6480, 370], [6560, 370]
+      [500, 490], [620, 490], [740, 490],
+      [920, 490], [980, 490], [1040, 490],
+      [1450, 490], [1560, 390], [1660, 390],
+      [1850, 490], [1960, 490],
+      [2450, 490], [2600, 345], [2680, 345], [2760, 345],
+      [3000, 490], [3140, 490],
+      [3600, 490], [3760, 380], [3840, 380], [3920, 380],
+      [4200, 490], [4350, 490],
+      [4900, 490], [5070, 325], [5150, 325],
+      [5400, 490], [5520, 490],
+      [6200, 490], [6400, 360], [6480, 360], [6560, 360]
     ];
 
     coinPositions.forEach((pos) => {
@@ -251,12 +280,12 @@ export default class gameplay extends Phaser.Scene {
 
   placeHumans() {
     const humanPositions = [
-      [820, 500],
-      [1750, 500],
-      [2860, 500],
-      [4050, 500],
-      [5250, 500],
-      [6660, 500]
+      [820, 495],
+      [1750, 495],
+      [2860, 495],
+      [4050, 495],
+      [5250, 495],
+      [6660, 495]
     ];
 
     humanPositions.forEach((pos) => {
@@ -266,11 +295,11 @@ export default class gameplay extends Phaser.Scene {
 
   placeBombs() {
     const bombPositions = [
-      [1350, 510],
-      [2340, 510],
-      [3470, 510],
-      [4740, 510],
-      [6030, 510]
+      [1350, 500],
+      [2340, 500],
+      [3470, 500],
+      [4740, 500],
+      [6030, 500]
     ];
 
     bombPositions.forEach((pos) => {
@@ -335,7 +364,6 @@ export default class gameplay extends Phaser.Scene {
     }
 
     this.isGameOver = true;
-
     this.player.setVelocity(0, 0);
     this.player.anims.play("idle", true);
 
@@ -355,7 +383,7 @@ export default class gameplay extends Phaser.Scene {
     }
 
     for (let i = 0; i < this.followers.length; i++) {
-      const index = Math.max(0, this.trail.length - 1 - (i + 1) * 18);
+      const index = Math.max(0, this.trail.length - 1 - (i + 1) * 8);
       const point = this.trail[index];
 
       if (point) {
