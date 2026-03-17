@@ -33,8 +33,11 @@ preload() {
 
 }
   create() {
-
-
+    // Stop menu background music while playing
+    const introSound = this.sound.get('SonIntro');
+    if (introSound && introSound.isPlaying) {
+      introSound.stop();
+    }
 
     this.isGameOver = false;
     this.speed = 230;

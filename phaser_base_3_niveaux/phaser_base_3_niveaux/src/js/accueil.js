@@ -15,8 +15,25 @@ export default class accueil extends Phaser.Scene {
   create() {
     this.cameras.main.setBackgroundColor("#87ceeb");
 
-    // Play sound after a user interaction (browser autoplay policies)
-    const introSound = this.sound.add('SonIntro');
+    // Play background sound only in the intro scene
+    this.introSound = this.sound.add('SonIntro', { loop: true });
+    this.events.on('shutdown', () => {
+      this.introSound.stop();
+    });
+
+    const playIntroSound = () => {
+      if (!this.introSound.isPlaying) {
+        this.introSound.play();
+      }
+    };
+
+    if (this.sound.context.state === 'running') {
+      playIntroSound();
+    } else {
+      this.input.once('pointerdown', () => {
+        this.sound.context.resume().then(playIntroSound);
+      });
+    }
 
     if (this.registry.get("money") === undefined) {
       this.registry.set("money", 0);
@@ -68,7 +85,7 @@ export default class accueil extends Phaser.Scene {
     });
 
     playButton.on("pointerdown", () => {
-      introSound.play();
+      this.introSound.play();
       this.scene.start("choixPortes");
     });
 
