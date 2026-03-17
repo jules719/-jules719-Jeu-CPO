@@ -33,6 +33,9 @@ preload() {
 
 }
   create() {
+
+
+
     this.isGameOver = false;
     this.speed = 230;
     this.jumpPower = -480;
