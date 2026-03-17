@@ -31,6 +31,11 @@ preload() {
     frameHeight: 48
   });
 
+  // ===== SOUNDS =====
+  this.load.audio("SonJeu", "src/assets/SonJeu.mp3");
+  this.load.audio("SonGameOver", "src/assets/SonGameOver.mp3");
+  this.load.audio("SonManger", "src/assets/SonManger.mp3");
+  this.load.audio("SonPiece", "src/assets/SonPiece.mp3");
 }
   create() {
     // Stop menu background music while playing
@@ -38,6 +43,12 @@ preload() {
     if (introSound && introSound.isPlaying) {
       introSound.stop();
     }
+
+    // Play the game start sound (one-shot)
+    this.sound.stopByKey('SonJeu');
+    this.sound.play('SonJeu');
+
+    this.gameOverSoundPlayed = false;
 
     this.isGameOver = false;
     this.speed = 230;
@@ -313,6 +324,9 @@ preload() {
   collectCoin(player, coin) {
     coin.destroy();
 
+    // Sound when picking up a coin
+    this.sound.play('SonPiece');
+
     let value = 1;
     if (this.coinMultiplierActive && this.time.now < this.coinMultiplierEndTime) {
       value = 2;
@@ -325,6 +339,10 @@ preload() {
 
   eatHuman(player, human) {
     human.destroy();
+
+    // Sound when eating a human
+    this.sound.play('SonManger');
+
     this.hordeCount += 1;
     this.hordeText.setText("Horde : " + this.hordeCount);
 
@@ -346,6 +364,13 @@ preload() {
       this.player.setPosition(this.player.x - 120, this.player.y - 100);
       this.player.setVelocity(0, 0);
       return;
+    }
+
+    // Stop in-game music and play game over sound once
+    this.sound.stopByKey('SonJeu');
+    if (!this.gameOverSoundPlayed) {
+      this.sound.play('SonGameOver');
+      this.gameOverSoundPlayed = true;
     }
 
     this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
@@ -412,6 +437,7 @@ preload() {
 
   update() {
     if (Phaser.Input.Keyboard.JustDown(this.keyEsc)) {
+      this.sound.stopByKey('SonJeu');
       this.scene.start("choixPortes");
       return;
     }
@@ -451,6 +477,7 @@ preload() {
     }
 
     if (this.player.x >= this.map.widthInPixels - 120) {
+      this.sound.stopByKey('SonJeu');
       this.player.setVelocityX(0);
       this.isGameOver = true;
       this.gameOverText.setText("NIVEAU TERMINE");

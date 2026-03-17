@@ -8,6 +8,11 @@ export default class armurerie extends Phaser.Scene {
     if (!this.cache.audio.exists('SonIntro')) {
       this.load.audio('SonIntro', 'src/assets/SonIntro.mp3');
     }
+
+    // Sound effects for armurerie actions
+    this.load.audio('SonPieceX2', 'src/assets/SonPieceX2.mp3');
+    this.load.audio('SonSkin', 'src/assets/SonSkin.mp3');
+    this.load.audio('SonVies', 'src/assets/SonVies.mp3');
   }
 
   create() {
@@ -67,6 +72,7 @@ export default class armurerie extends Phaser.Scene {
 
     skinNormalBtn.on("pointerdown", () => {
       this.registry.set("selectedSkin", "normal");
+      this.sound.play('SonSkin');
       this.showMessage("Skin normal equipe");
     });
 
@@ -82,6 +88,7 @@ export default class armurerie extends Phaser.Scene {
 
     skinZombieBtn.on("pointerdown", () => {
       this.registry.set("selectedSkin", "zombie");
+      this.sound.play('SonSkin');
       this.showMessage("Skin zombie equipe");
     });
 
@@ -106,6 +113,7 @@ export default class armurerie extends Phaser.Scene {
 
     x2CoinsBtn.on("pointerdown", () => {
       this.registry.set("coinMultiplierReady", true);
+      this.sound.play('SonPieceX2');
       this.showMessage("Bonus x2 pieces active pour la prochaine partie");
     });
 
@@ -121,6 +129,7 @@ export default class armurerie extends Phaser.Scene {
 
     extraLifeBtn.on("pointerdown", () => {
       this.registry.set("extraLifeReady", true);
+      this.sound.play('SonVies');
       this.showMessage("Bonus 2 vies active pour la prochaine partie");
     });
 
