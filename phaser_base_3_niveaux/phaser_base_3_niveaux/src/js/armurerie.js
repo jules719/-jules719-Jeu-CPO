@@ -6,16 +6,15 @@ export default class armurerie extends Phaser.Scene {
   preload() {
     this.load.image("door3", "src/assets/door3.png");
 
-    // previews skins
-    this.load.spritesheet("zombie", "src/assets/zombie.png", {
-      frameWidth: 32,
-      frameHeight: 48
-    });
+  this.load.spritesheet("zombie", "src/assets/zombie.png", {
+  frameWidth: 192,
+  frameHeight: 99
+});
 
-    this.load.spritesheet("soldatzombie", "src/assets/soldatzombie.png", {
-      frameWidth: 32,
-      frameHeight: 48
-    });
+this.load.spritesheet("soldatzombie", "src/assets/soldatzombie.png", {
+  frameWidth: 144,
+  frameHeight: 80
+});
 
     if (!this.cache.audio.exists("SonIntro")) {
       this.load.audio("SonIntro", "src/assets/SonIntro.mp3");
@@ -29,7 +28,6 @@ export default class armurerie extends Phaser.Scene {
   create() {
     this.cameras.main.setBackgroundColor("#87ceeb");
 
-    // musique menu continue
     this.menuMusic = this.sound.get("SonIntro") || this.sound.add("SonIntro", { loop: true, volume: 0.6 });
 
     const playMenuMusic = () => {
@@ -46,7 +44,6 @@ export default class armurerie extends Phaser.Scene {
       });
     }
 
-    // valeurs par défaut
     if (this.registry.get("selectedSkin") === undefined) {
       this.registry.set("selectedSkin", "soldat");
     }
@@ -57,7 +54,6 @@ export default class armurerie extends Phaser.Scene {
       this.registry.set("extraLifeReady", false);
     }
 
-    // ===== TITRE =====
     this.add.text(400, 45, "ARMURERIE", {
       fontSize: "40px",
       color: "#ffffff",
@@ -74,7 +70,6 @@ export default class armurerie extends Phaser.Scene {
       strokeThickness: 4
     }).setOrigin(0.5);
 
-    // ===== PANNEAUX =====
     this.add.rectangle(240, 270, 300, 290, 0x1f2d3a, 0.85).setStrokeStyle(4, 0xffffff);
     this.add.rectangle(560, 270, 300, 290, 0x1f2d3a, 0.85).setStrokeStyle(4, 0xffffff);
 
@@ -94,36 +89,17 @@ export default class armurerie extends Phaser.Scene {
       strokeThickness: 4
     }).setOrigin(0.5);
 
-    // aperçus sprites
-    this.previewSoldat = this.add.sprite(240, 230, "soldatzombie", 0);
-    this.previewSoldat.setScale(4);
+    // aperçus fixes
+    // aperçus fixes
+this.previewSoldat = this.add.sprite(240, 230, "soldatzombie", 0);
+this.previewSoldat.setOrigin(0.5, 0.5);
+this.previewSoldat.setScale(1.5);
+this.previewSoldat.setFrame(0);
 
-    this.previewZombie = this.add.sprite(560, 230, "zombie", 0);
-    this.previewZombie.setScale(4);
-
-    // petite anim preview
-    if (!this.anims.exists("preview_run_soldat")) {
-      this.anims.create({
-        key: "preview_run_soldat",
-        frames: this.anims.generateFrameNumbers("soldatzombie", { start: 0, end: 3 }),
-        frameRate: 8,
-        repeat: -1
-      });
-    }
-
-    if (!this.anims.exists("preview_run_zombie")) {
-      this.anims.create({
-        key: "preview_run_zombie",
-        frames: this.anims.generateFrameNumbers("zombie", { start: 0, end: 3 }),
-        frameRate: 8,
-        repeat: -1
-      });
-    }
-
-    this.previewSoldat.anims.play("preview_run_soldat", true);
-    this.previewZombie.anims.play("preview_run_zombie", true);
-
-    // boutons skins
+this.previewZombie = this.add.sprite(560, 230, "zombie", 0);
+this.previewZombie.setOrigin(0.5, 0.5);
+this.previewZombie.setScale(1.2);
+this.previewZombie.setFrame(0);
     this.soldatBtn = this.add.rectangle(240, 355, 200, 55, 0x3498db)
       .setStrokeStyle(4, 0xffffff)
       .setInteractive({ useHandCursor: true });
@@ -158,7 +134,6 @@ export default class armurerie extends Phaser.Scene {
       this.updateSelectionVisual();
     });
 
-    // ===== BONUS =====
     this.add.rectangle(400, 485, 650, 120, 0x16212b, 0.88).setStrokeStyle(4, 0xffffff);
 
     this.add.text(400, 425, "BONUS POUR LA PROCHAINE PARTIE", {
@@ -204,7 +179,6 @@ export default class armurerie extends Phaser.Scene {
       this.updateBonusVisual();
     });
 
-    // ===== INFOS VISUELLES =====
     this.skinInfoText = this.add.text(400, 585, "", {
       fontSize: "18px",
       color: "#ffffff",
@@ -221,7 +195,6 @@ export default class armurerie extends Phaser.Scene {
       strokeThickness: 4
     }).setOrigin(0.5);
 
-    // retour
     const backButton = this.add.rectangle(730, 50, 120, 50, 0xe74c3c)
       .setStrokeStyle(4, 0xffffff)
       .setInteractive({ useHandCursor: true });
@@ -236,7 +209,6 @@ export default class armurerie extends Phaser.Scene {
       this.scene.start("choixPortes");
     });
 
-    // message bas
     this.messageText = this.add.text(400, 655, "", {
       fontSize: "20px",
       color: "#ffffff",
@@ -250,22 +222,22 @@ export default class armurerie extends Phaser.Scene {
   }
 
   updateSelectionVisual() {
-    const skin = this.registry.get("selectedSkin");
+  const skin = this.registry.get("selectedSkin");
 
-    if (skin === "soldat") {
-      this.soldatBtn.setFillStyle(0x2980b9);
-      this.zombieBtn.setFillStyle(0x27ae60);
-      this.skinInfoText.setText("Skin actuel : SOLDAT");
-      this.previewSoldat.setScale(4.4);
-      this.previewZombie.setScale(4);
-    } else {
-      this.soldatBtn.setFillStyle(0x3498db);
-      this.zombieBtn.setFillStyle(0x1e8449);
-      this.skinInfoText.setText("Skin actuel : ZOMBIE");
-      this.previewSoldat.setScale(4);
-      this.previewZombie.setScale(4.4);
-    }
+  if (skin === "soldat") {
+    this.soldatBtn.setFillStyle(0x2980b9);
+    this.zombieBtn.setFillStyle(0x27ae60);
+    this.skinInfoText.setText("Skin actuel : SOLDAT");
+    this.previewSoldat.setScale(1.65);
+    this.previewZombie.setScale(1.2);
+  } else {
+    this.soldatBtn.setFillStyle(0x3498db);
+    this.zombieBtn.setFillStyle(0x1e8449);
+    this.skinInfoText.setText("Skin actuel : ZOMBIE");
+    this.previewSoldat.setScale(1.5);
+    this.previewZombie.setScale(1.35);
   }
+}
 
   updateBonusVisual() {
     const x2 = this.registry.get("coinMultiplierReady");
