@@ -74,18 +74,18 @@ preload() {
     const tileset = this.map.addTilesetImage("test", "tiles");
 
     // ===== PARALLAX IMAGE LAYERS =====
-    // Clouds - scrollFactor 0.1
+    // Clouds - scrollFactor 0.1 (arrière-plan lointain)
     this.cloudsLayer = this.add.tileSprite(0, 0, 926, 640, "cloud");
     this.cloudsLayer.setOrigin(0, 0);
     this.cloudsLayer.setScrollFactor(0.1, 1);
-    this.cloudsLayer.setDepth(0);
+    this.cloudsLayer.setDepth(-2);
     this.cloudsLayer.setDisplayOrigin(0, 0);
 
-    // Town - scrollFactor 0.5
+    // Town - scrollFactor 0.5 (arrière-plan moyen)
     this.townLayer = this.add.tileSprite(0, 0, 931, 640, "towns");
     this.townLayer.setOrigin(0, 0);
     this.townLayer.setScrollFactor(0.5, 1);
-    this.townLayer.setDepth(1);
+    this.townLayer.setDepth(-1);
     this.townLayer.setDisplayOrigin(0, 0);
 
     // Créer les calques tile layers
@@ -117,16 +117,16 @@ if (this.decorLayer) this.decorLayer.setDepth(3);
     }
 
     // Déterminer le skin au démarrage
-  const skin = this.registry.get("selectedSkin");
-const playerTexture = (skin === "zombie") ? "zombie" : "soldatzombie";
-
-this.player = this.physics.add.sprite(spawnX, spawnY, playerTexture);
-this.player.setScale(1.3);
-this.player.setCollideWorldBounds(false);
-this.player.setBounce(0);
-this.player.body.setSize(32, 48);
-this.player.body.setOffset(0, 0);
-this.player.setDepth(10);
+    const skin = this.registry.get("selectedSkin");
+    const playerTexture = (skin === "zombie") ? "zombie" : "soldatzombie";
+    
+    this.player = this.physics.add.sprite(spawnX, spawnY, playerTexture);
+    this.player.setScale(1.3);
+    this.player.setCollideWorldBounds(false);
+    this.player.setBounce(0);
+    this.player.body.setSize(32, 48);
+    this.player.setDepth(3);
+    this.player.body.setOffset(0, 0);
 
 this.physics.add.collider(this.player, this.groundLayer);
 
@@ -357,8 +357,13 @@ createAnimations() {
   collectCoin(player, coin) {
     coin.destroy();
 
-    // Sound when picking up a coin
-    this.sound.play('SonPiece');
+    // Sound when picking up a coin (stop after ~1.5s)
+    const coinSound = this.sound.play('SonPiece');
+    this.time.delayedCall(1500, () => {
+      if (coinSound && coinSound.isPlaying) {
+        coinSound.stop();
+      }
+    });
 
     let value = 1;
     if (this.coinMultiplierActive && this.time.now < this.coinMultiplierEndTime) {
@@ -370,10 +375,19 @@ createAnimations() {
     this.moneyText.setText("Argent : " + this.registry.get("money"));
   }
 
-eatHuman(player, human) {
-  human.destroy();
-  this.hordeCount += 1;
-  this.hordeText.setText("Horde : " + this.hordeCount);
+  eatHuman(player, human) {
+    human.destroy();
+
+    // Sound when eating a human (stop after 3s)
+    const eatSound = this.sound.play('SonManger');
+    this.time.delayedCall(2000, () => {
+      if (eatSound && eatSound.isPlaying) {
+        eatSound.stop();
+      }
+    });
+
+    this.hordeCount += 1;
+    this.hordeText.setText("Horde : " + this.hordeCount);
 
   const skin = this.registry.get("selectedSkin");
   const followerTexture = (skin === "zombie") ? "zombie" : "soldatzombie";
@@ -418,6 +432,8 @@ eatHuman(player, human) {
     if (this.isGameOver) {
       return;
     }
+
+    this.sound.stopByKey('SonJeu');
 
     this.isGameOver = true;
     this.player.setVelocity(0, 0);

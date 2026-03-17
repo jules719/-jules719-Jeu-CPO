@@ -113,7 +113,12 @@ export default class armurerie extends Phaser.Scene {
 
     x2CoinsBtn.on("pointerdown", () => {
       this.registry.set("coinMultiplierReady", true);
-      this.sound.play('SonPieceX2');
+      const x2Sound = this.sound.play('SonPieceX2');
+      this.time.delayedCall(3000, () => {
+        if (x2Sound && x2Sound.isPlaying) {
+          x2Sound.stop();
+        }
+      });
       this.showMessage("Bonus x2 pieces active pour la prochaine partie");
     });
 
