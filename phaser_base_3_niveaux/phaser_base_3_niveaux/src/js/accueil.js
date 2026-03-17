@@ -4,10 +4,14 @@ export default class accueil extends Phaser.Scene {
   }
 
   preload() {
+    this.load.audio('SonIntro', 'assets/SonIntro.mp3');
   }
 
   create() {
-    this.cameras.main.setBackgroundColor("#87ceeb");
+
+   var SonIntro = this.sound.add('SonIntro');
+   SonIntro.play();  
+  this.cameras.main.setBackgroundColor("#87ceeb");
 
     if (this.registry.get("money") === undefined) {
       this.registry.set("money", 0);
