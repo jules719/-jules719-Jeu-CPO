@@ -6,7 +6,7 @@ export default class gameplay extends Phaser.Scene {
 preload() {
 
   // ===== BASE =====
-  this.load.image("sky", "src/assets/sky.png");
+  this.load.image("towns", "src/assets/towns.png");
 
   // ===== PIECES =====
   // si tu as coin.png il sera utilisé, sinon ton code prendra star
@@ -18,18 +18,18 @@ preload() {
 
   // ===== HUMAINS =====
   // fallback automatique avec bite si human n'existe pas
-  this.load.image("human", "src/assets/human.png");
+  this.load.image("humain", "src/assets/humain.png");
  
 
   // ===== MAP TILED =====
-  this.load.image(
-    "tileset",
-    "src/assets/zombie_level1_daylight_soviet_abandoned.png"
+  this.load.image("tileset","src/assets/tiles.png"
   );
 
+this.load.image("tileset2","src/assets/cloud.png"
+  );
   this.load.tilemapTiledJSON(
     "map",
-    "src/assets/tiled map 1 soleil projet jeu.tmj"
+    "src/assets/test parrallax.tmj"
   );
 
   // ===== JOUEUR =====
@@ -102,7 +102,7 @@ preload() {
       }
     }
 
-    this.player = this.physics.add.sprite(spawnX, spawnY, "dude");
+    this.player = this.physics.add.sprite(spawnX, spawnY, "zombie");
     this.player.setScale(1.3);
     this.player.setCollideWorldBounds(false);
     this.player.setBounce(0);
@@ -226,7 +226,7 @@ preload() {
         this.player.setTint(0x66ff66);
       }
     } else {
-      this.player.setTexture("dude");
+      this.player.setTexture("zombie");
       this.player.clearTint();
     }
   }
@@ -235,7 +235,7 @@ preload() {
     if (!this.anims.exists("run")) {
       this.anims.create({
         key: "run",
-        frames: this.anims.generateFrameNumbers("dude", { start: 0, end: 3 }),
+        frames: this.anims.generateFrameNumbers("zombie", { start: 0, end: 3 }),
         frameRate: 10,
         repeat: -1
       });
@@ -244,7 +244,7 @@ preload() {
     if (!this.anims.exists("idle")) {
       this.anims.create({
         key: "idle",
-        frames: [{ key: "dude", frame: 4 }],
+        frames: [{ key: "zombie", frame: 4 }],
         frameRate: 1
       });
     }
@@ -322,7 +322,7 @@ preload() {
     this.hordeCount += 1;
     this.hordeText.setText("Horde : " + this.hordeCount);
 
-    const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, "dude");
+    const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, "zombie");
     follower.setScale(1.2);
     follower.anims.play("run", true);
 
