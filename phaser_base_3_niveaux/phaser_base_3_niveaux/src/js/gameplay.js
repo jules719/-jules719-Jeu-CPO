@@ -5,11 +5,23 @@ export default class gameplay extends Phaser.Scene {
 
 preload() {
 
+  // ===== BASE =====
   this.load.image("sky", "src/assets/sky.png");
-  this.load.image("star", "src/assets/star.png");
-  this.load.image("bomb", "src/assets/bomb.png");
-  this.load.image("bite", "src/assets/bite.png");
 
+  // ===== PIECES =====
+  // si tu as coin.png il sera utilisé, sinon ton code prendra star
+  this.load.image("piece", "src/assets/piece.png");
+  
+
+  // ===== BOMBES =====
+  this.load.image("bomb", "src/assets/bomb.png");
+
+  // ===== HUMAINS =====
+  // fallback automatique avec bite si human n'existe pas
+  this.load.image("human", "src/assets/human.png");
+ 
+
+  // ===== MAP TILED =====
   this.load.image(
     "tileset",
     "src/assets/zombie_level1_daylight_soviet_abandoned.png"
@@ -20,196 +32,201 @@ preload() {
     "src/assets/tiled map 1 soleil projet jeu.tmj"
   );
 
-  this.load.spritesheet("dude", "src/assets/dude.png", {
+  // ===== JOUEUR =====
+  this.load.spritesheet("zombie", "src/assets/zombie.png", {
+    frameWidth: 32,
+    frameHeight: 48
+  });
+
+  // ===== SKIN ZOMBIE (optionnel) =====
+  this.load.spritesheet("soldatzombie", "src/assets/soldatzombie.png", {
     frameWidth: 32,
     frameHeight: 48
   });
 
 }
-create() {
-  this.isGameOver = false;
-  this.speed = 230;
-  this.jumpPower = -480;
-  this.hordeCount = 1;
-  this.followers = [];
-  this.trail = [];
+  create() {
+    this.isGameOver = false;
+    this.speed = 230;
+    this.jumpPower = -480;
+    this.hordeCount = 1;
+    this.followers = [];
+    this.trail = [];
 
-  this.extraLives = this.registry.get("extraLifeReady") ? 1 : 0;
-  this.registry.set("extraLifeReady", false);
+    this.extraLives = this.registry.get("extraLifeReady") ? 1 : 0;
+    this.registry.set("extraLifeReady", false);
 
-  this.coinMultiplierActive = this.registry.get("coinMultiplierReady");
-  this.registry.set("coinMultiplierReady", false);
-  this.coinMultiplierEndTime = 0;
+    this.coinMultiplierActive = this.registry.get("coinMultiplierReady");
+    this.registry.set("coinMultiplierReady", false);
+    this.coinMultiplierEndTime = 0;
 
-  this.cameras.main.setBackgroundColor("#87ceeb");
+    this.cameras.main.setBackgroundColor("#87ceeb");
 
-  // ===== MAP TILED =====
-  this.map = this.make.tilemap({ key: "map" });
+    // ===== MAP TILED =====
+    this.map = this.make.tilemap({ key: "map" });
 
-  this.tileset = this.map.addTilesetImage(
-    "zombie_level1_daylight_soviet_abandoned",
-    "tileset"
-  );
+    this.tileset = this.map.addTilesetImage(
+      "zombie_level1_daylight_soviet_abandoned",
+      "tileset"
+    );
 
-  this.groundLayer = this.map.createLayer("Calque de Tuiles 1", this.tileset, 0, 0);
-  this.decorLayer = this.map.createLayer("Calque de Tuiles 2", this.tileset, 0, 0);
+    this.groundLayer = this.map.createLayer("Calque de Tuiles 1", this.tileset, 0, 0);
+    this.decorLayer = this.map.createLayer("Calque de Tuiles 2", this.tileset, 0, 0);
 
-  // Collision avec la propriété Tiled
-  this.groundLayer.setCollisionByProperty({ estSolide: true });
+    this.groundLayer.setCollisionByProperty({ estSolide: true });
 
-  // Décommente cette ligne seulement si la propriété ne marche pas
-  // this.groundLayer.setCollisionBetween(1, 10000);
+    this.physics.world.setBounds(
+      0,
+      0,
+      this.map.widthInPixels,
+      this.map.heightInPixels
+    );
 
-  this.physics.world.setBounds(
-    0,
-    0,
-    this.map.widthInPixels,
-    this.map.heightInPixels
-  );
+    this.cameras.main.setBounds(
+      0,
+      0,
+      this.map.widthInPixels,
+      this.map.heightInPixels
+    );
 
-  this.cameras.main.setBounds(
-    0,
-    0,
-    this.map.widthInPixels,
-    this.map.heightInPixels
-  );
+    // ===== JOUEUR =====
+    let spawnX = 100;
+    let spawnY = 100;
 
-// ===== JOUEUR =====
-// ===== JOUEUR =====
-let spawnX = 100;
-let spawnY = 100;
+    for (let y = 0; y < this.map.heightInPixels; y += this.map.tileHeight) {
+      const tile = this.groundLayer.getTileAtWorldXY(spawnX, y, true);
 
-// Cherche la première tuile solide sous spawnX
-for (let y = 0; y < this.map.heightInPixels; y += this.map.tileHeight) {
-  const tile = this.groundLayer.getTileAtWorldXY(spawnX, y, true);
+      if (tile && tile.collides) {
+        spawnY = tile.pixelY - 30;
+        break;
+      }
+    }
 
-  if (tile && tile.collides) {
-    spawnY = tile.pixelY - 30;
-    break;
+    this.player = this.physics.add.sprite(spawnX, spawnY, "dude");
+    this.player.setScale(1.3);
+    this.player.setCollideWorldBounds(false);
+    this.player.setBounce(0);
+    this.player.body.setSize(32, 48);
+    this.player.body.setOffset(0, 0);
+
+    this.applySelectedSkin();
+
+    this.physics.add.collider(this.player, this.groundLayer);
+
+    this.createAnimations();
+    this.player.anims.play("run", true);
+
+    this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+
+    // DEBUG collisions Tiled
+    const debugGraphics = this.add.graphics().setAlpha(0.7);
+    this.groundLayer.renderDebug(debugGraphics, {
+      tileColor: null,
+      collidingTileColor: new Phaser.Display.Color(255, 0, 0, 120),
+      faceColor: new Phaser.Display.Color(0, 255, 0, 180)
+    });
+
+    // Contrôles
+    this.cursors = this.input.keyboard.createCursorKeys();
+    this.keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.keyR = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+    this.keyEsc = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+
+    // Groupes
+    this.coins = this.physics.add.staticGroup();
+    this.humans = this.physics.add.staticGroup();
+    this.bombs = this.physics.add.staticGroup();
+
+    this.placeCoins();
+    this.placeHumans();
+    this.placeBombs();
+
+    this.physics.add.overlap(this.player, this.coins, this.collectCoin, null, this);
+    this.physics.add.overlap(this.player, this.humans, this.eatHuman, null, this);
+    this.physics.add.overlap(this.player, this.bombs, this.hitBomb, null, this);
+
+    // UI
+    this.moneyText = this.add.text(20, 20, "Argent : " + this.registry.get("money"), {
+      fontSize: "24px",
+      color: "#ffffff",
+      fontStyle: "bold",
+      stroke: "#000000",
+      strokeThickness: 5
+    }).setScrollFactor(0);
+
+    this.hordeText = this.add.text(20, 55, "Horde : " + this.hordeCount, {
+      fontSize: "24px",
+      color: "#ffffff",
+      fontStyle: "bold",
+      stroke: "#000000",
+      strokeThickness: 5
+    }).setScrollFactor(0);
+
+    this.livesText = this.add.text(20, 90, "Vies : " + (1 + this.extraLives), {
+      fontSize: "24px",
+      color: "#ffffff",
+      fontStyle: "bold",
+      stroke: "#000000",
+      strokeThickness: 5
+    }).setScrollFactor(0);
+
+    this.multiplierText = this.add.text(20, 125, "", {
+      fontSize: "22px",
+      color: "#ffe66d",
+      fontStyle: "bold",
+      stroke: "#000000",
+      strokeThickness: 5
+    }).setScrollFactor(0);
+
+    this.infoText = this.add.text(20, 160, "ESPACE / HAUT = SAUT", {
+      fontSize: "18px",
+      color: "#ffffff",
+      stroke: "#000000",
+      strokeThickness: 4
+    }).setScrollFactor(0);
+
+    this.backText = this.add.text(20, 185, "ECHAP = RETOUR", {
+      fontSize: "18px",
+      color: "#ffffff",
+      stroke: "#000000",
+      strokeThickness: 4
+    }).setScrollFactor(0);
+
+    this.gameOverText = this.add.text(400, 230, "", {
+      fontSize: "52px",
+      color: "#ff0000",
+      fontStyle: "bold",
+      stroke: "#000000",
+      strokeThickness: 7,
+      align: "center"
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+
+    this.subText = this.add.text(400, 310, "", {
+      fontSize: "26px",
+      color: "#ffffff",
+      fontStyle: "bold",
+      stroke: "#000000",
+      strokeThickness: 5,
+      align: "center"
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+
+    if (this.coinMultiplierActive) {
+      this.coinMultiplierEndTime = this.time.now + 15000;
+      this.multiplierText.setText("x2 PIECES : 15");
+    }
   }
-}
-
-this.player = this.physics.add.sprite(spawnX, spawnY, "dude");
-this.player.setScale(1.3);
-this.player.setCollideWorldBounds(false);
-this.player.setBounce(0);
-this.player.body.setSize(32, 48);
-this.player.body.setOffset(0, 0);
-
-this.applySelectedSkin();
-
-this.physics.add.collider(this.player, this.groundLayer);
-
-this.createAnimations();
-this.player.anims.play("run", true);
-
-this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
-this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
-
-  // DEBUG collisions Tiled
-  const debugGraphics = this.add.graphics().setAlpha(0.7);
-  this.groundLayer.renderDebug(debugGraphics, {
-    tileColor: null,
-    collidingTileColor: new Phaser.Display.Color(255, 0, 0, 120),
-    faceColor: new Phaser.Display.Color(0, 255, 0, 180)
-  });
-
-  // Contrôles
-  this.cursors = this.input.keyboard.createCursorKeys();
-  this.keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-  this.keyR = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
-  this.keyEsc = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
-
-  // Groupes
-  this.coins = this.physics.add.staticGroup();
-  this.humans = this.physics.add.staticGroup();
-  this.bombs = this.physics.add.staticGroup();
-
-  this.placeCoins();
-  this.placeHumans();
-  this.placeBombs();
-
-  this.physics.add.overlap(this.player, this.coins, this.collectCoin, null, this);
-  this.physics.add.overlap(this.player, this.humans, this.eatHuman, null, this);
-  this.physics.add.overlap(this.player, this.bombs, this.hitBomb, null, this);
-
-  // UI
-  this.moneyText = this.add.text(20, 20, "Argent : " + this.registry.get("money"), {
-    fontSize: "24px",
-    color: "#ffffff",
-    fontStyle: "bold",
-    stroke: "#000000",
-    strokeThickness: 5
-  }).setScrollFactor(0);
-
-  this.hordeText = this.add.text(20, 55, "Horde : " + this.hordeCount, {
-    fontSize: "24px",
-    color: "#ffffff",
-    fontStyle: "bold",
-    stroke: "#000000",
-    strokeThickness: 5
-  }).setScrollFactor(0);
-
-  this.livesText = this.add.text(20, 90, "Vies : " + (1 + this.extraLives), {
-    fontSize: "24px",
-    color: "#ffffff",
-    fontStyle: "bold",
-    stroke: "#000000",
-    strokeThickness: 5
-  }).setScrollFactor(0);
-
-  this.multiplierText = this.add.text(20, 125, "", {
-    fontSize: "22px",
-    color: "#ffe66d",
-    fontStyle: "bold",
-    stroke: "#000000",
-    strokeThickness: 5
-  }).setScrollFactor(0);
-
-  this.infoText = this.add.text(20, 160, "ESPACE / HAUT = SAUT", {
-    fontSize: "18px",
-    color: "#ffffff",
-    stroke: "#000000",
-    strokeThickness: 4
-  }).setScrollFactor(0);
-
-  this.backText = this.add.text(20, 185, "ECHAP = RETOUR", {
-    fontSize: "18px",
-    color: "#ffffff",
-    stroke: "#000000",
-    strokeThickness: 4
-  }).setScrollFactor(0);
-
-  this.gameOverText = this.add.text(400, 230, "", {
-    fontSize: "52px",
-    color: "#ff0000",
-    fontStyle: "bold",
-    stroke: "#000000",
-    strokeThickness: 7,
-    align: "center"
-  }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
-
-  this.subText = this.add.text(400, 310, "", {
-    fontSize: "26px",
-    color: "#ffffff",
-    fontStyle: "bold",
-    stroke: "#000000",
-    strokeThickness: 5,
-    align: "center"
-  }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
-
-  if (this.coinMultiplierActive) {
-    this.coinMultiplierEndTime = this.time.now + 15000;
-    this.multiplierText.setText("x2 PIECES : 15");
-  }
-}
 
   applySelectedSkin() {
     const skin = this.registry.get("selectedSkin");
 
     if (skin === "zombie") {
-      this.player.setTint(0x66ff66);
+      if (this.textures.exists("zombie")) {
+        this.player.setTexture("zombie");
+      } else {
+        this.player.setTint(0x66ff66);
+      }
     } else {
+      this.player.setTexture("dude");
       this.player.clearTint();
     }
   }
@@ -235,14 +252,24 @@ this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
 
   placeCoins() {
     const coinPositions = [
-      [500, 490], [620, 490], [740, 490],
-      [920, 490], [980, 490], [1040, 490],
-      [1450, 390], [1560, 390], [1660, 390],
-      [1850, 490], [1960, 490]
+      [500, 490],
+      [620, 490],
+      [740, 490],
+      [920, 490],
+      [980, 490],
+      [1040, 490],
+      [1450, 390],
+      [1560, 390],
+      [1660, 390],
+      [1850, 490],
+      [1960, 490]
     ];
 
     coinPositions.forEach((pos) => {
-      this.coins.create(pos[0], pos[1], "star").setScale(0.8).refreshBody();
+      const coinKey = this.textures.exists("coin") ? "coin" : "star";
+      this.coins.create(pos[0], pos[1], coinKey)
+        .setScale(0.8)
+        .refreshBody();
     });
   }
 
@@ -254,7 +281,11 @@ this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
     ];
 
     humanPositions.forEach((pos) => {
-      this.humans.create(pos[0], pos[1], "bite").setScale(0.8).refreshBody();
+      const humanKey = this.textures.exists("human") ? "human" : "bite";
+      this.humans.create(pos[0], pos[1], humanKey)
+        .setOrigin(0.5, 1)
+        .setScale(0.8)
+        .refreshBody();
     });
   }
 
@@ -266,7 +297,10 @@ this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
     ];
 
     bombPositions.forEach((pos) => {
-      this.bombs.create(pos[0], pos[1], "bomb").setScale(0.8).refreshBody();
+      this.bombs.create(pos[0], pos[1], "bomb")
+        .setOrigin(0.5, 1)
+        .setScale(0.8)
+        .refreshBody();
     });
   }
 
@@ -293,7 +327,11 @@ this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
     follower.anims.play("run", true);
 
     if (this.registry.get("selectedSkin") === "zombie") {
-      follower.setTint(0x66ff66);
+      if (this.textures.exists("zombie")) {
+        follower.setTexture("zombie");
+      } else {
+        follower.setTint(0x66ff66);
+      }
     }
 
     this.followers.push(follower);
@@ -312,12 +350,17 @@ this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
   }
 
   hitBomb() {
-    if (this.isGameOver) return;
+    if (this.isGameOver) {
+      return;
+    }
+
     this.loseLifeOrGameOver("Tu as touche une bombe");
   }
 
   triggerGameOver(title, subtitle) {
-    if (this.isGameOver) return;
+    if (this.isGameOver) {
+      return;
+    }
 
     this.isGameOver = true;
     this.player.setVelocity(0, 0);
@@ -351,7 +394,10 @@ this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
 
   updateMultiplierUI() {
     if (this.coinMultiplierActive) {
-      const remaining = Math.max(0, Math.ceil((this.coinMultiplierEndTime - this.time.now) / 1000));
+      const remaining = Math.max(
+        0,
+        Math.ceil((this.coinMultiplierEndTime - this.time.now) / 1000)
+      );
 
       if (remaining > 0) {
         this.multiplierText.setText("x2 PIECES : " + remaining);
@@ -388,7 +434,10 @@ this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
     if (this.player.body.velocity.y !== 0) {
       this.player.anims.stop();
       this.player.setFrame(5);
-    } else if (!this.player.anims.isPlaying || this.player.anims.currentAnim.key !== "run") {
+    } else if (
+      !this.player.anims.isPlaying ||
+      this.player.anims.currentAnim.key !== "run"
+    ) {
       this.player.anims.play("run", true);
     }
 
