@@ -5,7 +5,9 @@ export default class gameplay extends Phaser.Scene {
 
 preload() {
 
-  // ===== MAP ASSETS =====
+  // ===== MAP PARALLAX LAYERS =====
+  this.load.image("cloud", "src/assets/cloud.png");
+  this.load.image("towns", "src/assets/towns.png");
   this.load.image("tiles", "src/assets/tiles.png");
 
   this.load.tilemapTiledJSON(
@@ -54,9 +56,28 @@ preload() {
     // Ajouter le tileset
     const tileset = this.map.addTilesetImage("test", "tiles");
 
+    // ===== PARALLAX IMAGE LAYERS =====
+    // Clouds - scrollFactor 0.1
+    this.cloudsLayer = this.add.tileSprite(0, 0, 926, 640, "cloud");
+    this.cloudsLayer.setOrigin(0, 0);
+    this.cloudsLayer.setScrollFactor(0.1, 1);
+    this.cloudsLayer.setDepth(0);
+    this.cloudsLayer.setDisplayOrigin(0, 0);
+
+    // Town - scrollFactor 0.5
+    this.townLayer = this.add.tileSprite(0, 0, 931, 640, "towns");
+    this.townLayer.setOrigin(0, 0);
+    this.townLayer.setScrollFactor(0.5, 1);
+    this.townLayer.setDepth(1);
+    this.townLayer.setDisplayOrigin(0, 0);
+
     // Créer les calques tile layers
     this.groundLayer = this.map.createLayer("Calque de Tuiles 1", tileset, 0, 0);
     this.decorLayer = this.map.createLayer("Calque de Tuiles 2", tileset, 0, 0);
+
+    // Définir la profondeur des calques de tuiles
+    if (this.groundLayer) this.groundLayer.setDepth(2);
+    if (this.decorLayer) this.decorLayer.setDepth(2);
 
     // Définir les collisions
     this.groundLayer.setCollisionByProperty({ estSolide: true });

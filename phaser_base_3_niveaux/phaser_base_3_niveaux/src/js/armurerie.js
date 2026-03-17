@@ -4,7 +4,7 @@ export default class armurerie extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("door3", "./assets/door3.png");
+    this.load.image("door3", "src/assets/door3.png");
   }
 
   create() {
