@@ -57,18 +57,18 @@ preload() {
     const tileset = this.map.addTilesetImage("test", "tiles");
 
     // ===== PARALLAX IMAGE LAYERS =====
-    // Clouds - scrollFactor 0.1
+    // Clouds - scrollFactor 0.1 (arrière-plan lointain)
     this.cloudsLayer = this.add.tileSprite(0, 0, 926, 640, "cloud");
     this.cloudsLayer.setOrigin(0, 0);
     this.cloudsLayer.setScrollFactor(0.1, 1);
-    this.cloudsLayer.setDepth(0);
+    this.cloudsLayer.setDepth(-2);
     this.cloudsLayer.setDisplayOrigin(0, 0);
 
-    // Town - scrollFactor 0.5
+    // Town - scrollFactor 0.5 (arrière-plan moyen)
     this.townLayer = this.add.tileSprite(0, 0, 931, 640, "towns");
     this.townLayer.setOrigin(0, 0);
     this.townLayer.setScrollFactor(0.5, 1);
-    this.townLayer.setDepth(1);
+    this.townLayer.setDepth(-1);
     this.townLayer.setDisplayOrigin(0, 0);
 
     // Créer les calques tile layers
@@ -108,6 +108,7 @@ preload() {
     this.player.setCollideWorldBounds(false);
     this.player.setBounce(0);
     this.player.body.setSize(32, 48);
+    this.player.setDepth(3);
     this.player.body.setOffset(0, 0);
 
     this.physics.add.collider(this.player, this.groundLayer);
