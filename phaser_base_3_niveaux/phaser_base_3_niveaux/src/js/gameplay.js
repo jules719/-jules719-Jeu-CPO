@@ -31,25 +31,8 @@ preload() {
     frameHeight: 48
   });
 
-  // ===== SOUNDS =====
-  this.load.audio("SonJeu", "src/assets/SonJeu.mp3");
-  this.load.audio("SonGameOver", "src/assets/SonGameOver.mp3");
-  this.load.audio("SonManger", "src/assets/SonManger.mp3");
-  this.load.audio("SonPiece", "src/assets/SonPiece.mp3");
 }
   create() {
-    // Stop menu background music while playing
-    const introSound = this.sound.get('SonIntro');
-    if (introSound && introSound.isPlaying) {
-      introSound.stop();
-    }
-
-    // Play the game start sound (one-shot)
-    this.sound.stopByKey('SonJeu');
-    this.sound.play('SonJeu');
-
-    this.gameOverSoundPlayed = false;
-
     this.isGameOver = false;
     this.speed = 230;
     this.jumpPower = -480;
@@ -74,19 +57,15 @@ preload() {
     const tileset = this.map.addTilesetImage("test", "tiles");
 
     // ===== PARALLAX IMAGE LAYERS =====
-    // Calculer la largeur nécessaire pour les tileSprites
-    const mapWidth = this.map.widthInPixels;
-    const mapHeight = this.map.heightInPixels;
-
     // Clouds - scrollFactor 0.1 (arrière-plan lointain)
-    this.cloudsLayer = this.add.tileSprite(0, 0, mapWidth, mapHeight, "cloud");
+    this.cloudsLayer = this.add.tileSprite(0, 0, 926, 640, "cloud");
     this.cloudsLayer.setOrigin(0, 0);
     this.cloudsLayer.setScrollFactor(0.1, 1);
     this.cloudsLayer.setDepth(-2);
     this.cloudsLayer.setDisplayOrigin(0, 0);
 
     // Town - scrollFactor 0.5 (arrière-plan moyen)
-    this.townLayer = this.add.tileSprite(0, 0, mapWidth, mapHeight, "towns");
+    this.townLayer = this.add.tileSprite(0, 0, 931, 640, "towns");
     this.townLayer.setOrigin(0, 0);
     this.townLayer.setScrollFactor(0.5, 1);
     this.townLayer.setDepth(-1);
@@ -98,7 +77,7 @@ preload() {
 
     // Définir la profondeur des calques de tuiles
     if (this.groundLayer) this.groundLayer.setDepth(2);
-if (this.decorLayer) this.decorLayer.setDepth(3);
+    if (this.decorLayer) this.decorLayer.setDepth(2);
 
     // Définir les collisions
     this.groundLayer.setCollisionByProperty({ estSolide: true });
@@ -122,7 +101,7 @@ if (this.decorLayer) this.decorLayer.setDepth(3);
 
     // Déterminer le skin au démarrage
     const skin = this.registry.get("selectedSkin");
-    const playerTexture = (skin === "zombie") ? "zombie" : "soldatzombie";
+    const playerTexture = (skin === "zombi") ? "zombie" : "soldatzombie";
     
     this.player = this.physics.add.sprite(spawnX, spawnY, playerTexture);
     this.player.setScale(1.3);
@@ -132,12 +111,20 @@ if (this.decorLayer) this.decorLayer.setDepth(3);
     this.player.setDepth(3);
     this.player.body.setOffset(0, 0);
 
-this.physics.add.collider(this.player, this.groundLayer);
+    this.physics.add.collider(this.player, this.groundLayer);
 
-this.createAnimations();
-this.player.anims.play((skin === "zombie") ? "run_zombie" : "run_soldat", true);
+    this.createAnimations();
+    this.player.anims.play("run", true);
 
-this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+    this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+
+    // DEBUG collisions Tiled
+    const debugGraphics = this.add.graphics().setAlpha(0.7);
+    this.groundLayer.renderDebug(debugGraphics, {
+      tileColor: null,
+      collidingTileColor: new Phaser.Display.Color(255, 0, 0, 120),
+      faceColor: new Phaser.Display.Color(0, 255, 0, 180)
+    });
 
     // Contrôles
     this.cursors = this.input.keyboard.createCursorKeys();
@@ -150,28 +137,10 @@ this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
     this.humans = this.physics.add.staticGroup();
     this.bombs = this.physics.add.staticGroup();
 
-    this.placeCoins(); {
-      this.coins.create(pos[0], pos[1], "piece")
-  .setScale(0.8)
-  .setDepth(8)
-  .refreshBody();
-    }
-    
-    this.placeHumans(); {this.humans.create(pos[0], pos[1], "humain")
-  .setOrigin(0.5, 1)
-  .setScale(0.8)
-  .setDepth(8)
-  .refreshBody();
-    }
+    this.placeCoins();
+    this.placeHumans();
+    this.placeBombs();
 
-    this.placeBombs(); {this.bombs.create(pos[0], pos[1], "bomb")
-  .setOrigin(0.5, 1)
-  .setScale(0.8)
-  .setDepth(8)
-  .refreshBody();}
-
-
-  
     this.physics.add.overlap(this.player, this.coins, this.collectCoin, null, this);
     this.physics.add.overlap(this.player, this.humans, this.eatHuman, null, this);
     this.physics.add.overlap(this.player, this.bombs, this.hitBomb, null, this);
@@ -262,41 +231,27 @@ this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
     }
   }
 
-createAnimations() {
-  if (!this.anims.exists("run_zombie")) {
-    this.anims.create({
-      key: "run_zombie",
-      frames: this.anims.generateFrameNumbers("zombie", { start: 0, end: 3 }),
-      frameRate: 10,
-      repeat: -1
-    });
-  }
+  createAnimations() {
+    const skin = this.registry.get("selectedSkin");
+    const textureKey = (skin === "zombie") ? "zombie" : "soldatzombie";
 
-  if (!this.anims.exists("idle_zombie")) {
-    this.anims.create({
-      key: "idle_zombie",
-      frames: [{ key: "zombie", frame: 4 }],
-      frameRate: 1
-    });
-  }
+    if (!this.anims.exists("run")) {
+      this.anims.create({
+        key: "run",
+        frames: this.anims.generateFrameNumbers(textureKey, { start: 0, end: 3 }),
+        frameRate: 10,
+        repeat: -1
+      });
+    }
 
-  if (!this.anims.exists("run_soldat")) {
-    this.anims.create({
-      key: "run_soldat",
-      frames: this.anims.generateFrameNumbers("soldatzombie", { start: 0, end: 3 }),
-      frameRate: 10,
-      repeat: -1
-    });
+    if (!this.anims.exists("idle")) {
+      this.anims.create({
+        key: "idle",
+        frames: [{ key: textureKey, frame: 4 }],
+        frameRate: 1
+      });
+    }
   }
-
-  if (!this.anims.exists("idle_soldat")) {
-    this.anims.create({
-      key: "idle_soldat",
-      frames: [{ key: "soldatzombie", frame: 4 }],
-      frameRate: 1
-    });
-  }
-}
 
   placeCoins() {
     const coinPositions = [
@@ -353,14 +308,6 @@ createAnimations() {
   collectCoin(player, coin) {
     coin.destroy();
 
-    // Sound when picking up a coin (stop after ~1.5s)
-    const coinSound = this.sound.play('SonPiece');
-    this.time.delayedCall(1500, () => {
-      if (coinSound && coinSound.isPlaying) {
-        coinSound.stop();
-      }
-    });
-
     let value = 1;
     if (this.coinMultiplierActive && this.time.now < this.coinMultiplierEndTime) {
       value = 2;
@@ -373,29 +320,19 @@ createAnimations() {
 
   eatHuman(player, human) {
     human.destroy();
-
-    // Sound when eating a human (stop after 3s)
-    const eatSound = this.sound.play('SonManger');
-    this.time.delayedCall(2, () => {
-      if (eatSound && eatSound.isPlaying) {
-        eatSound.stop();
-      }
-    });
-
     this.hordeCount += 1;
     this.hordeText.setText("Horde : " + this.hordeCount);
 
-  const skin = this.registry.get("selectedSkin");
-  const followerTexture = (skin === "zombie") ? "zombie" : "soldatzombie";
-  const followerAnim = (skin === "zombie") ? "run_zombie" : "run_soldat";
+    // Déterminer le skin du follower
+    const skin = this.registry.get("selectedSkin");
+    const followerTexture = (skin === "zombie") ? "zombie" : "soldatzombie";
+    
+    const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, followerTexture);
+    follower.setScale(1.2);
+    follower.anims.play("run", true);
 
-  const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, followerTexture);
-  follower.setScale(1.2);
-  follower.setDepth(9);
-  follower.anims.play(followerAnim, true);
-
-  this.followers.push(follower);
-}
+    this.followers.push(follower);
+  }
 
   loseLifeOrGameOver(reasonText) {
     if (this.extraLives > 0) {
@@ -404,13 +341,6 @@ createAnimations() {
       this.player.setPosition(this.player.x - 120, this.player.y - 100);
       this.player.setVelocity(0, 0);
       return;
-    }
-
-    // Stop in-game music and play game over sound once
-    this.sound.stopByKey('SonJeu');
-    if (!this.gameOverSoundPlayed) {
-      this.sound.play('SonGameOver');
-      this.gameOverSoundPlayed = true;
     }
 
     this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
@@ -429,19 +359,16 @@ createAnimations() {
       return;
     }
 
-    this.sound.stopByKey('SonJeu');
-
     this.isGameOver = true;
     this.player.setVelocity(0, 0);
-    const skin = this.registry.get("selectedSkin");
-this.player.anims.play((skin === "zombie") ? "idle_zombie" : "idle_soldat", true);
+    this.player.anims.play("idle", true);
 
     this.gameOverText.setText(title);
     this.subText.setText(subtitle);
 
     this.followers.forEach((follower) => {
-  follower.anims.play((skin === "zombie") ? "idle_zombie" : "idle_soldat", true);
-});
+      follower.anims.play("idle", true);
+    });
   }
 
   updateFollowers() {
@@ -480,7 +407,6 @@ this.player.anims.play((skin === "zombie") ? "idle_zombie" : "idle_soldat", true
 
   update() {
     if (Phaser.Input.Keyboard.JustDown(this.keyEsc)) {
-      this.sound.stopByKey('SonJeu');
       this.scene.start("choixPortes");
       return;
     }
@@ -502,18 +428,15 @@ this.player.anims.play((skin === "zombie") ? "idle_zombie" : "idle_soldat", true
       this.player.setVelocityY(this.jumpPower);
     }
 
-   const skin = this.registry.get("selectedSkin");
-const runAnim = (skin === "zombie") ? "run_zombie" : "run_soldat";
-
-if (this.player.body.velocity.y !== 0) {
-  this.player.anims.stop();
-  this.player.setFrame(5);
-} else if (
-  !this.player.anims.isPlaying ||
-  this.player.anims.currentAnim.key !== runAnim
-) {
-  this.player.anims.play(runAnim, true);
-}
+    if (this.player.body.velocity.y !== 0) {
+      this.player.anims.stop();
+      this.player.setFrame(5);
+    } else if (
+      !this.player.anims.isPlaying ||
+      this.player.anims.currentAnim.key !== "run"
+    ) {
+      this.player.anims.play("run", true);
+    }
 
     this.updateFollowers();
     this.updateMultiplierUI();
@@ -523,7 +446,6 @@ if (this.player.body.velocity.y !== 0) {
     }
 
     if (this.player.x >= this.map.widthInPixels - 120) {
-      this.sound.stopByKey('SonJeu');
       this.player.setVelocityX(0);
       this.isGameOver = true;
       this.gameOverText.setText("NIVEAU TERMINE");
