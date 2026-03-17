@@ -94,7 +94,7 @@ preload() {
 
     // Définir la profondeur des calques de tuiles
     if (this.groundLayer) this.groundLayer.setDepth(2);
-    if (this.decorLayer) this.decorLayer.setDepth(2);
+if (this.decorLayer) this.decorLayer.setDepth(3);
 
     // Définir les collisions
     this.groundLayer.setCollisionByProperty({ estSolide: true });
@@ -117,22 +117,23 @@ preload() {
     }
 
     // Déterminer le skin au démarrage
-    const skin = this.registry.get("selectedSkin");
-    const playerTexture = (skin === "zombie") ? "zombie" : "soldatzombie";
-    
-    this.player = this.physics.add.sprite(spawnX, spawnY, playerTexture);
-    this.player.setScale(1.3);
-    this.player.setCollideWorldBounds(false);
-    this.player.setBounce(0);
-    this.player.body.setSize(32, 48);
-    this.player.body.setOffset(0, 0);
+  const skin = this.registry.get("selectedSkin");
+const playerTexture = (skin === "zombie") ? "zombie" : "soldatzombie";
 
-    this.physics.add.collider(this.player, this.groundLayer);
+this.player = this.physics.add.sprite(spawnX, spawnY, playerTexture);
+this.player.setScale(1.3);
+this.player.setCollideWorldBounds(false);
+this.player.setBounce(0);
+this.player.body.setSize(32, 48);
+this.player.body.setOffset(0, 0);
+this.player.setDepth(10);
 
-    this.createAnimations();
-    this.player.anims.play("run", true);
+this.physics.add.collider(this.player, this.groundLayer);
 
-    this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+this.createAnimations();
+this.player.anims.play((skin === "zombie") ? "run_zombie" : "run_soldat", true);
+
+this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
 
     // DEBUG collisions Tiled
     const debugGraphics = this.add.graphics().setAlpha(0.7);
@@ -153,10 +154,28 @@ preload() {
     this.humans = this.physics.add.staticGroup();
     this.bombs = this.physics.add.staticGroup();
 
-    this.placeCoins();
-    this.placeHumans();
-    this.placeBombs();
+    this.placeCoins(); {
+      this.coins.create(pos[0], pos[1], "piece")
+  .setScale(0.8)
+  .setDepth(8)
+  .refreshBody();
+    }
+    
+    this.placeHumans(); {this.humans.create(pos[0], pos[1], "humain")
+  .setOrigin(0.5, 1)
+  .setScale(0.8)
+  .setDepth(8)
+  .refreshBody();
+    }
 
+    this.placeBombs(); {this.bombs.create(pos[0], pos[1], "bomb")
+  .setOrigin(0.5, 1)
+  .setScale(0.8)
+  .setDepth(8)
+  .refreshBody();}
+
+
+  
     this.physics.add.overlap(this.player, this.coins, this.collectCoin, null, this);
     this.physics.add.overlap(this.player, this.humans, this.eatHuman, null, this);
     this.physics.add.overlap(this.player, this.bombs, this.hitBomb, null, this);
@@ -247,27 +266,41 @@ preload() {
     }
   }
 
-  createAnimations() {
-    const skin = this.registry.get("selectedSkin");
-    const textureKey = (skin === "zombie") ? "zombie" : "soldatzombie";
-
-    if (!this.anims.exists("run")) {
-      this.anims.create({
-        key: "run",
-        frames: this.anims.generateFrameNumbers(textureKey, { start: 0, end: 3 }),
-        frameRate: 10,
-        repeat: -1
-      });
-    }
-
-    if (!this.anims.exists("idle")) {
-      this.anims.create({
-        key: "idle",
-        frames: [{ key: textureKey, frame: 4 }],
-        frameRate: 1
-      });
-    }
+createAnimations() {
+  if (!this.anims.exists("run_zombie")) {
+    this.anims.create({
+      key: "run_zombie",
+      frames: this.anims.generateFrameNumbers("zombie", { start: 0, end: 3 }),
+      frameRate: 10,
+      repeat: -1
+    });
   }
+
+  if (!this.anims.exists("idle_zombie")) {
+    this.anims.create({
+      key: "idle_zombie",
+      frames: [{ key: "zombie", frame: 4 }],
+      frameRate: 1
+    });
+  }
+
+  if (!this.anims.exists("run_soldat")) {
+    this.anims.create({
+      key: "run_soldat",
+      frames: this.anims.generateFrameNumbers("soldatzombie", { start: 0, end: 3 }),
+      frameRate: 10,
+      repeat: -1
+    });
+  }
+
+  if (!this.anims.exists("idle_soldat")) {
+    this.anims.create({
+      key: "idle_soldat",
+      frames: [{ key: "soldatzombie", frame: 4 }],
+      frameRate: 1
+    });
+  }
+}
 
   placeCoins() {
     const coinPositions = [
@@ -337,25 +370,22 @@ preload() {
     this.moneyText.setText("Argent : " + this.registry.get("money"));
   }
 
-  eatHuman(player, human) {
-    human.destroy();
+eatHuman(player, human) {
+  human.destroy();
+  this.hordeCount += 1;
+  this.hordeText.setText("Horde : " + this.hordeCount);
 
-    // Sound when eating a human
-    this.sound.play('SonManger');
+  const skin = this.registry.get("selectedSkin");
+  const followerTexture = (skin === "zombie") ? "zombie" : "soldatzombie";
+  const followerAnim = (skin === "zombie") ? "run_zombie" : "run_soldat";
 
-    this.hordeCount += 1;
-    this.hordeText.setText("Horde : " + this.hordeCount);
+  const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, followerTexture);
+  follower.setScale(1.2);
+  follower.setDepth(9);
+  follower.anims.play(followerAnim, true);
 
-    // Déterminer le skin du follower
-    const skin = this.registry.get("selectedSkin");
-    const followerTexture = (skin === "zombie") ? "zombie" : "soldatzombie";
-    
-    const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, followerTexture);
-    follower.setScale(1.2);
-    follower.anims.play("run", true);
-
-    this.followers.push(follower);
-  }
+  this.followers.push(follower);
+}
 
   loseLifeOrGameOver(reasonText) {
     if (this.extraLives > 0) {
@@ -391,14 +421,15 @@ preload() {
 
     this.isGameOver = true;
     this.player.setVelocity(0, 0);
-    this.player.anims.play("idle", true);
+    const skin = this.registry.get("selectedSkin");
+this.player.anims.play((skin === "zombie") ? "idle_zombie" : "idle_soldat", true);
 
     this.gameOverText.setText(title);
     this.subText.setText(subtitle);
 
     this.followers.forEach((follower) => {
-      follower.anims.play("idle", true);
-    });
+  follower.anims.play((skin === "zombie") ? "idle_zombie" : "idle_soldat", true);
+});
   }
 
   updateFollowers() {
@@ -459,15 +490,18 @@ preload() {
       this.player.setVelocityY(this.jumpPower);
     }
 
-    if (this.player.body.velocity.y !== 0) {
-      this.player.anims.stop();
-      this.player.setFrame(5);
-    } else if (
-      !this.player.anims.isPlaying ||
-      this.player.anims.currentAnim.key !== "run"
-    ) {
-      this.player.anims.play("run", true);
-    }
+   const skin = this.registry.get("selectedSkin");
+const runAnim = (skin === "zombie") ? "run_zombie" : "run_soldat";
+
+if (this.player.body.velocity.y !== 0) {
+  this.player.anims.stop();
+  this.player.setFrame(5);
+} else if (
+  !this.player.anims.isPlaying ||
+  this.player.anims.currentAnim.key !== runAnim
+) {
+  this.player.anims.play(runAnim, true);
+}
 
     this.updateFollowers();
     this.updateMultiplierUI();
