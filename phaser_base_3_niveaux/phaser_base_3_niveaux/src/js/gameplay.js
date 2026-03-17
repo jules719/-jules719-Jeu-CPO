@@ -107,7 +107,7 @@ preload() {
 
     // Déterminer le skin au démarrage
     const skin = this.registry.get("selectedSkin");
-    const playerTexture = (skin === "zombi") ? "zombie" : "soldatzombie";
+    const playerTexture = (skin === "zombie") ? "zombie" : "soldatzombie";
     
     this.player = this.physics.add.sprite(spawnX, spawnY, playerTexture);
     this.player.setScale(1.3);
