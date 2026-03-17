@@ -324,8 +324,13 @@ preload() {
   collectCoin(player, coin) {
     coin.destroy();
 
-    // Sound when picking up a coin
-    this.sound.play('SonPiece');
+    // Sound when picking up a coin (stop after ~1.5s)
+    const coinSound = this.sound.play('SonPiece');
+    this.time.delayedCall(1500, () => {
+      if (coinSound && coinSound.isPlaying) {
+        coinSound.stop();
+      }
+    });
 
     let value = 1;
     if (this.coinMultiplierActive && this.time.now < this.coinMultiplierEndTime) {
@@ -340,8 +345,13 @@ preload() {
   eatHuman(player, human) {
     human.destroy();
 
-    // Sound when eating a human
-    this.sound.play('SonManger');
+    // Sound when eating a human (stop after 3s)
+    const eatSound = this.sound.play('SonManger');
+    this.time.delayedCall(2000, () => {
+      if (eatSound && eatSound.isPlaying) {
+        eatSound.stop();
+      }
+    });
 
     this.hordeCount += 1;
     this.hordeText.setText("Horde : " + this.hordeCount);
@@ -388,6 +398,8 @@ preload() {
     if (this.isGameOver) {
       return;
     }
+
+    this.sound.stopByKey('SonJeu');
 
     this.isGameOver = true;
     this.player.setVelocity(0, 0);
