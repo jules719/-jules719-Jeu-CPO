@@ -21,15 +21,19 @@ export default class accueil extends Phaser.Scene {
       this.introSound.stop();
     });
 
-    // Allow sound to start after first user interaction (browser autoplay rules)
-    this.soundStarted = false;
-    this.input.once('pointerdown', () => {
-      if (!this.soundStarted) {
-        this.soundStarted = true;
-        this.sound.context.resume();
+    const playIntroSound = () => {
+      if (!this.introSound.isPlaying) {
         this.introSound.play();
       }
-    });
+    };
+
+    if (this.sound.context.state === 'running') {
+      playIntroSound();
+    } else {
+      this.input.once('pointerdown', () => {
+        this.sound.context.resume().then(playIntroSound);
+      });
+    }
 
     if (this.registry.get("money") === undefined) {
       this.registry.set("money", 0);
