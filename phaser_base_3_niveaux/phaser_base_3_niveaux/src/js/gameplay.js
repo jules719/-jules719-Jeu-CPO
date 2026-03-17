@@ -347,7 +347,7 @@ preload() {
 
     // Sound when eating a human (stop after 3s)
     const eatSound = this.sound.play('SonManger');
-    this.time.delayedCall(2000, () => {
+    this.time.delayedCall(2, () => {
       if (eatSound && eatSound.isPlaying) {
         eatSound.stop();
       }
