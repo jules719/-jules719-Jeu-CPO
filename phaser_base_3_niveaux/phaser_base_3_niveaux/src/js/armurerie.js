@@ -5,10 +5,18 @@ export default class armurerie extends Phaser.Scene {
 
   preload() {
     this.load.image("door3", "src/assets/door3.png");
+    this.load.audio('SonIntro', 'src/assets/SonIntro.mp3');
   }
 
   create() {
     this.cameras.main.setBackgroundColor("#87ceeb");
+
+    // Play background sound only in the armurerie scene
+    this.introSound = this.sound.add('SonIntro', { loop: true });
+    this.introSound.play();
+    this.events.on('shutdown', () => {
+      this.introSound.stop();
+    });
 
     this.add.text(400, 60, "ARMURERIE", {
       fontSize: "38px",
