@@ -4,6 +4,11 @@ export default class accueil extends Phaser.Scene {
   }
 
   preload() {
+    // Debug: catch any failures to load assets
+    this.load.on('loaderror', (file) => {
+      console.error('Asset load error:', file.key, file.src);
+    });
+
     this.load.audio('SonIntro', 'src/assets/SonIntro.mp3');
   }
 
