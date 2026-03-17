@@ -74,15 +74,19 @@ preload() {
     const tileset = this.map.addTilesetImage("test", "tiles");
 
     // ===== PARALLAX IMAGE LAYERS =====
+    // Calculer la largeur nécessaire pour les tileSprites
+    const mapWidth = this.map.widthInPixels;
+    const mapHeight = this.map.heightInPixels;
+
     // Clouds - scrollFactor 0.1 (arrière-plan lointain)
-    this.cloudsLayer = this.add.tileSprite(0, 0, 926, 640, "cloud");
+    this.cloudsLayer = this.add.tileSprite(0, 0, mapWidth, mapHeight, "cloud");
     this.cloudsLayer.setOrigin(0, 0);
     this.cloudsLayer.setScrollFactor(0.1, 1);
     this.cloudsLayer.setDepth(-2);
     this.cloudsLayer.setDisplayOrigin(0, 0);
 
     // Town - scrollFactor 0.5 (arrière-plan moyen)
-    this.townLayer = this.add.tileSprite(0, 0, 931, 640, "towns");
+    this.townLayer = this.add.tileSprite(0, 0, mapWidth, mapHeight, "towns");
     this.townLayer.setOrigin(0, 0);
     this.townLayer.setScrollFactor(0.5, 1);
     this.townLayer.setDepth(-1);
@@ -134,14 +138,6 @@ preload() {
     this.player.anims.play("run", true);
 
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
-
-    // DEBUG collisions Tiled
-    const debugGraphics = this.add.graphics().setAlpha(0.7);
-    this.groundLayer.renderDebug(debugGraphics, {
-      tileColor: null,
-      collidingTileColor: new Phaser.Display.Color(255, 0, 0, 120),
-      faceColor: new Phaser.Display.Color(0, 255, 0, 180)
-    });
 
     // Contrôles
     this.cursors = this.input.keyboard.createCursorKeys();
