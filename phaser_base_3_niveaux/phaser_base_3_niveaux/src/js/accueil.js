@@ -4,14 +4,14 @@ export default class accueil extends Phaser.Scene {
   }
 
   preload() {
-    this.load.audio('SonIntro', 'assets/SonIntro.mp3');
+    this.load.audio('SonIntro', 'src/assets/SonIntro.mp3');
   }
 
   create() {
+    this.cameras.main.setBackgroundColor("#87ceeb");
 
-   var SonIntro = this.sound.add('SonIntro');
-   SonIntro.play();  
-  this.cameras.main.setBackgroundColor("#87ceeb");
+    // Play sound after a user interaction (browser autoplay policies)
+    const introSound = this.sound.add('SonIntro');
 
     if (this.registry.get("money") === undefined) {
       this.registry.set("money", 0);
@@ -63,6 +63,7 @@ export default class accueil extends Phaser.Scene {
     });
 
     playButton.on("pointerdown", () => {
+      introSound.play();
       this.scene.start("choixPortes");
     });
 
