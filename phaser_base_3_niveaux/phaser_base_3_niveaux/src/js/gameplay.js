@@ -16,7 +16,7 @@ preload() {
   );
 
   // ===== ITEMS =====
-  this.load.image("piece", "src/assets/piece.png");
+  this.load.image("piece", "src/assets/spinning coin.png");
   this.load.image("bomb", "src/assets/bomb.png");
   this.load.image("humain", "src/assets/humain.png");
 
@@ -267,6 +267,8 @@ preload() {
     coinPositions.forEach((pos) => {
       this.coins.create(pos[0], pos[1], "piece")
         .setScale(0.8)
+        .setDepth(2.5)
+        .setAngularVelocity(3.14)
         .refreshBody();
     });
   }
@@ -282,6 +284,7 @@ preload() {
       this.humans.create(pos[0], pos[1], "humain")
         .setOrigin(0.5, 1)
         .setScale(0.8)
+        .setDepth(2.5)
         .refreshBody();
     });
   }
@@ -297,6 +300,7 @@ preload() {
       this.bombs.create(pos[0], pos[1], "bomb")
         .setOrigin(0.5, 1)
         .setScale(0.8)
+        .setDepth(2.5)
         .refreshBody();
     });
   }
@@ -325,6 +329,7 @@ preload() {
     
     const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, followerTexture);
     follower.setScale(1.2);
+    follower.setDepth(3);
     follower.anims.play("run", true);
 
     this.followers.push(follower);
