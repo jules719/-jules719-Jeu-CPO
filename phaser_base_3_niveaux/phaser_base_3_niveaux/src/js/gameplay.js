@@ -226,6 +226,7 @@ preload() {
       this.player.clearTint();
     }
   }
+  
 
   createAnimations() {
     const skin = this.registry.get("selectedSkin");
