@@ -4,10 +4,33 @@ export default class accueil extends Phaser.Scene {
   }
 
   preload() {
+    // Debug: catch any failures to load assets
+    this.load.on('loaderror', (file) => {
+      console.error('Asset load error:', file.key, file.src);
+    });
+
+    this.load.audio('SonIntro', 'src/assets/SonIntro.mp3');
   }
 
   create() {
     this.cameras.main.setBackgroundColor("#87ceeb");
+
+    // Use a single music instance across menu scenes (avoid double-play)
+    this.menuMusic = this.sound.get('SonIntro') || this.sound.add('SonIntro', { loop: true });
+
+    const playMenuMusic = () => {
+      if (!this.menuMusic.isPlaying) {
+        this.menuMusic.play();
+      }
+    };
+
+    if (this.sound.context.state === 'running') {
+      playMenuMusic();
+    } else {
+      this.input.once('pointerdown', () => {
+        this.sound.context.resume().then(playMenuMusic);
+      });
+    }
 
     if (this.registry.get("money") === undefined) {
       this.registry.set("money", 0);
@@ -59,6 +82,9 @@ export default class accueil extends Phaser.Scene {
     });
 
     playButton.on("pointerdown", () => {
+      if (this.menuMusic && !this.menuMusic.isPlaying) {
+        this.menuMusic.play();
+      }
       this.scene.start("choixPortes");
     });
 

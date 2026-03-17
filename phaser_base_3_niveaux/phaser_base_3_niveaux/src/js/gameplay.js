@@ -31,8 +31,25 @@ preload() {
     frameHeight: 48
   });
 
+  // ===== SOUNDS =====
+  this.load.audio("SonJeu", "src/assets/SonJeu.mp3");
+  this.load.audio("SonGameOver", "src/assets/SonGameOver.mp3");
+  this.load.audio("SonManger", "src/assets/SonManger.mp3");
+  this.load.audio("SonPiece", "src/assets/SonPiece.mp3");
 }
   create() {
+    // Stop menu background music while playing
+    const introSound = this.sound.get('SonIntro');
+    if (introSound && introSound.isPlaying) {
+      introSound.stop();
+    }
+
+    // Play the game start sound (one-shot)
+    this.sound.stopByKey('SonJeu');
+    this.sound.play('SonJeu');
+
+    this.gameOverSoundPlayed = false;
+
     this.isGameOver = false;
     this.speed = 230;
     this.jumpPower = -480;
@@ -101,7 +118,7 @@ preload() {
 
     // Déterminer le skin au démarrage
     const skin = this.registry.get("selectedSkin");
-    const playerTexture = (skin === "zombi") ? "zombie" : "soldatzombie";
+    const playerTexture = (skin === "zombie") ? "zombie" : "soldatzombie";
     
     this.player = this.physics.add.sprite(spawnX, spawnY, playerTexture);
     this.player.setScale(1.3);
@@ -308,6 +325,14 @@ preload() {
   collectCoin(player, coin) {
     coin.destroy();
 
+    // Sound when picking up a coin (stop after ~1.5s)
+    const coinSound = this.sound.play('SonPiece');
+    this.time.delayedCall(1500, () => {
+      if (coinSound && coinSound.isPlaying) {
+        coinSound.stop();
+      }
+    });
+
     let value = 1;
     if (this.coinMultiplierActive && this.time.now < this.coinMultiplierEndTime) {
       value = 2;
@@ -320,6 +345,15 @@ preload() {
 
   eatHuman(player, human) {
     human.destroy();
+
+    // Sound when eating a human (stop after 3s)
+    const eatSound = this.sound.play('SonManger');
+    this.time.delayedCall(2000, () => {
+      if (eatSound && eatSound.isPlaying) {
+        eatSound.stop();
+      }
+    });
+
     this.hordeCount += 1;
     this.hordeText.setText("Horde : " + this.hordeCount);
 
@@ -343,6 +377,13 @@ preload() {
       return;
     }
 
+    // Stop in-game music and play game over sound once
+    this.sound.stopByKey('SonJeu');
+    if (!this.gameOverSoundPlayed) {
+      this.sound.play('SonGameOver');
+      this.gameOverSoundPlayed = true;
+    }
+
     this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
   }
 
@@ -358,6 +399,8 @@ preload() {
     if (this.isGameOver) {
       return;
     }
+
+    this.sound.stopByKey('SonJeu');
 
     this.isGameOver = true;
     this.player.setVelocity(0, 0);
@@ -407,6 +450,7 @@ preload() {
 
   update() {
     if (Phaser.Input.Keyboard.JustDown(this.keyEsc)) {
+      this.sound.stopByKey('SonJeu');
       this.scene.start("choixPortes");
       return;
     }
@@ -446,6 +490,7 @@ preload() {
     }
 
     if (this.player.x >= this.map.widthInPixels - 120) {
+      this.sound.stopByKey('SonJeu');
       this.player.setVelocityX(0);
       this.isGameOver = true;
       this.gameOverText.setText("NIVEAU TERMINE");

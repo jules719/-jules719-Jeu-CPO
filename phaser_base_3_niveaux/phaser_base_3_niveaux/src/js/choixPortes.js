@@ -6,10 +6,30 @@ export default class choixPortes extends Phaser.Scene {
   preload() {
     this.load.image("door1", "src/assets/door1.png");
     this.load.image("door2", "src/assets/door2.png");
+    if (!this.cache.audio.exists('SonIntro')) {
+      this.load.audio('SonIntro', 'src/assets/SonIntro.mp3');
+    }
   }
 
   create() {
     this.cameras.main.setBackgroundColor("#87ceeb");
+
+    // Keep the menu music continuous across menu scenes
+    this.menuMusic = this.sound.get('SonIntro') || this.sound.add('SonIntro', { loop: true });
+
+    const playMenuMusic = () => {
+      if (!this.menuMusic.isPlaying) {
+        this.menuMusic.play();
+      }
+    };
+
+    if (this.sound.context.state === 'running') {
+      playMenuMusic();
+    } else {
+      this.input.once('pointerdown', () => {
+        this.sound.context.resume().then(playMenuMusic);
+      });
+    }
 
     this.add.text(400, 80, "CHOISIS UNE PORTE", {
       fontSize: "34px",

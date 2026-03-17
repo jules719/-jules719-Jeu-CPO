@@ -5,10 +5,35 @@ export default class armurerie extends Phaser.Scene {
 
   preload() {
     this.load.image("door3", "src/assets/door3.png");
+    if (!this.cache.audio.exists('SonIntro')) {
+      this.load.audio('SonIntro', 'src/assets/SonIntro.mp3');
+    }
+
+    // Sound effects for armurerie actions
+    this.load.audio('SonPieceX2', 'src/assets/SonPieceX2.mp3');
+    this.load.audio('SonSkin', 'src/assets/SonSkin.mp3');
+    this.load.audio('SonVies', 'src/assets/SonVies.mp3');
   }
 
   create() {
     this.cameras.main.setBackgroundColor("#87ceeb");
+
+    // Keep the menu music continuous across menu scenes
+    this.menuMusic = this.sound.get('SonIntro') || this.sound.add('SonIntro', { loop: true });
+
+    const playMenuMusic = () => {
+      if (!this.menuMusic.isPlaying) {
+        this.menuMusic.play();
+      }
+    };
+
+    if (this.sound.context.state === 'running') {
+      playMenuMusic();
+    } else {
+      this.input.once('pointerdown', () => {
+        this.sound.context.resume().then(playMenuMusic);
+      });
+    }
 
     this.add.text(400, 60, "ARMURERIE", {
       fontSize: "38px",
@@ -47,6 +72,7 @@ export default class armurerie extends Phaser.Scene {
 
     skinNormalBtn.on("pointerdown", () => {
       this.registry.set("selectedSkin", "normal");
+      this.sound.play('SonSkin');
       this.showMessage("Skin normal equipe");
     });
 
@@ -62,6 +88,7 @@ export default class armurerie extends Phaser.Scene {
 
     skinZombieBtn.on("pointerdown", () => {
       this.registry.set("selectedSkin", "zombie");
+      this.sound.play('SonSkin');
       this.showMessage("Skin zombie equipe");
     });
 
@@ -86,6 +113,12 @@ export default class armurerie extends Phaser.Scene {
 
     x2CoinsBtn.on("pointerdown", () => {
       this.registry.set("coinMultiplierReady", true);
+      const x2Sound = this.sound.play('SonPieceX2');
+      this.time.delayedCall(3000, () => {
+        if (x2Sound && x2Sound.isPlaying) {
+          x2Sound.stop();
+        }
+      });
       this.showMessage("Bonus x2 pieces active pour la prochaine partie");
     });
 
@@ -101,6 +134,7 @@ export default class armurerie extends Phaser.Scene {
 
     extraLifeBtn.on("pointerdown", () => {
       this.registry.set("extraLifeReady", true);
+      this.sound.play('SonVies');
       this.showMessage("Bonus 2 vies active pour la prochaine partie");
     });
 
