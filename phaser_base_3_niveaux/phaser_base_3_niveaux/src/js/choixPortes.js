@@ -4,13 +4,12 @@ export default class choixPortes extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("sky", "src/assets/sky.png");
     this.load.image("door1", "src/assets/door1.png");
     this.load.image("door2", "src/assets/door2.png");
   }
 
   create() {
-    this.add.image(400, 300, "sky").setDisplaySize(800, 600);
+    this.cameras.main.setBackgroundColor("#87ceeb");
 
     this.add.text(400, 80, "CHOISIS UNE PORTE", {
       fontSize: "34px",

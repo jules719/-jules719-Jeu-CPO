@@ -4,10 +4,11 @@ export default class accueil extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("sky", "./assets/sky.png");
   }
 
   create() {
+    this.cameras.main.setBackgroundColor("#87ceeb");
+
     if (this.registry.get("money") === undefined) {
       this.registry.set("money", 0);
     }
@@ -23,8 +24,6 @@ export default class accueil extends Phaser.Scene {
     if (this.registry.get("extraLifeReady") === undefined) {
       this.registry.set("extraLifeReady", false);
     }
-
-    this.add.image(400, 300, "sky").setDisplaySize(800, 600);
 
     this.add.text(400, 140, "ZOMBIE TSUNAMI", {
       fontSize: "42px",

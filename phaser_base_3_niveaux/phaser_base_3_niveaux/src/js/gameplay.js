@@ -5,40 +5,25 @@ export default class gameplay extends Phaser.Scene {
 
 preload() {
 
-  // ===== BASE =====
-  this.load.image("sky", "src/assets/sky.png");
-
-  // ===== PIECES =====
-  // si tu as coin.png il sera utilisé, sinon ton code prendra star
-  this.load.image("piece", "src/assets/piece.png");
-  
-
-  // ===== BOMBES =====
-  this.load.image("bomb", "src/assets/bomb.png");
-
-  // ===== HUMAINS =====
-  // fallback automatique avec bite si human n'existe pas
-  this.load.image("human", "src/assets/human.png");
- 
-
-  // ===== MAP TILED =====
-  this.load.image(
-    "tileset",
-    "src/assets/zombie_level1_daylight_soviet_abandoned.png"
-  );
+  // ===== MAP ASSETS =====
+  this.load.image("tiles", "src/assets/tiles.png");
 
   this.load.tilemapTiledJSON(
     "map",
-    "src/assets/tiled map 1 soleil projet jeu.tmj"
+    "src/assets/test parrallax.tmj"
   );
 
-  // ===== JOUEUR =====
+  // ===== ITEMS =====
+  this.load.image("piece", "src/assets/piece.png");
+  this.load.image("bomb", "src/assets/bomb.png");
+  this.load.image("humain", "src/assets/humain.png");
+
+  // ===== PERSONNAGES =====
   this.load.spritesheet("zombie", "src/assets/zombie.png", {
     frameWidth: 32,
     frameHeight: 48
   });
 
-  // ===== SKIN ZOMBIE (optionnel) =====
   this.load.spritesheet("soldatzombie", "src/assets/soldatzombie.png", {
     frameWidth: 32,
     frameHeight: 48
@@ -63,31 +48,22 @@ preload() {
     this.cameras.main.setBackgroundColor("#87ceeb");
 
     // ===== MAP TILED =====
+    // Créer la tilemap
     this.map = this.make.tilemap({ key: "map" });
 
-    this.tileset = this.map.addTilesetImage(
-      "zombie_level1_daylight_soviet_abandoned",
-      "tileset"
-    );
+    // Ajouter le tileset
+    const tileset = this.map.addTilesetImage("test", "tiles");
 
-    this.groundLayer = this.map.createLayer("Calque de Tuiles 1", this.tileset, 0, 0);
-    this.decorLayer = this.map.createLayer("Calque de Tuiles 2", this.tileset, 0, 0);
+    // Créer les calques tile layers
+    this.groundLayer = this.map.createLayer("Calque de Tuiles 1", tileset, 0, 0);
+    this.decorLayer = this.map.createLayer("Calque de Tuiles 2", tileset, 0, 0);
 
+    // Définir les collisions
     this.groundLayer.setCollisionByProperty({ estSolide: true });
 
-    this.physics.world.setBounds(
-      0,
-      0,
-      this.map.widthInPixels,
-      this.map.heightInPixels
-    );
-
-    this.cameras.main.setBounds(
-      0,
-      0,
-      this.map.widthInPixels,
-      this.map.heightInPixels
-    );
+    // Définir les bounds
+    this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
+    this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
 
     // ===== JOUEUR =====
     let spawnX = 100;
@@ -102,14 +78,16 @@ preload() {
       }
     }
 
-    this.player = this.physics.add.sprite(spawnX, spawnY, "dude");
+    // Déterminer le skin au démarrage
+    const skin = this.registry.get("selectedSkin");
+    const playerTexture = (skin === "zombi") ? "zombie" : "soldatzombie";
+    
+    this.player = this.physics.add.sprite(spawnX, spawnY, playerTexture);
     this.player.setScale(1.3);
     this.player.setCollideWorldBounds(false);
     this.player.setBounce(0);
     this.player.body.setSize(32, 48);
     this.player.body.setOffset(0, 0);
-
-    this.applySelectedSkin();
 
     this.physics.add.collider(this.player, this.groundLayer);
 
@@ -226,16 +204,19 @@ preload() {
         this.player.setTint(0x66ff66);
       }
     } else {
-      this.player.setTexture("dude");
+      this.player.setTexture("soldatzombie");
       this.player.clearTint();
     }
   }
 
   createAnimations() {
+    const skin = this.registry.get("selectedSkin");
+    const textureKey = (skin === "zombie") ? "zombie" : "soldatzombie";
+
     if (!this.anims.exists("run")) {
       this.anims.create({
         key: "run",
-        frames: this.anims.generateFrameNumbers("dude", { start: 0, end: 3 }),
+        frames: this.anims.generateFrameNumbers(textureKey, { start: 0, end: 3 }),
         frameRate: 10,
         repeat: -1
       });
@@ -244,7 +225,7 @@ preload() {
     if (!this.anims.exists("idle")) {
       this.anims.create({
         key: "idle",
-        frames: [{ key: "dude", frame: 4 }],
+        frames: [{ key: textureKey, frame: 4 }],
         frameRate: 1
       });
     }
@@ -266,8 +247,7 @@ preload() {
     ];
 
     coinPositions.forEach((pos) => {
-      const coinKey = this.textures.exists("coin") ? "coin" : "star";
-      this.coins.create(pos[0], pos[1], coinKey)
+      this.coins.create(pos[0], pos[1], "piece")
         .setScale(0.8)
         .refreshBody();
     });
@@ -281,8 +261,7 @@ preload() {
     ];
 
     humanPositions.forEach((pos) => {
-      const humanKey = this.textures.exists("human") ? "human" : "bite";
-      this.humans.create(pos[0], pos[1], humanKey)
+      this.humans.create(pos[0], pos[1], "humain")
         .setOrigin(0.5, 1)
         .setScale(0.8)
         .refreshBody();
@@ -322,17 +301,13 @@ preload() {
     this.hordeCount += 1;
     this.hordeText.setText("Horde : " + this.hordeCount);
 
-    const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, "dude");
+    // Déterminer le skin du follower
+    const skin = this.registry.get("selectedSkin");
+    const followerTexture = (skin === "zombie") ? "zombie" : "soldatzombie";
+    
+    const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, followerTexture);
     follower.setScale(1.2);
     follower.anims.play("run", true);
-
-    if (this.registry.get("selectedSkin") === "zombie") {
-      if (this.textures.exists("zombie")) {
-        follower.setTexture("zombie");
-      } else {
-        follower.setTint(0x66ff66);
-      }
-    }
 
     this.followers.push(follower);
   }

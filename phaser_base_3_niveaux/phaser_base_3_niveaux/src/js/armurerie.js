@@ -4,12 +4,11 @@ export default class armurerie extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("sky", "./assets/sky.png");
     this.load.image("door3", "./assets/door3.png");
   }
 
   create() {
-    this.add.image(400, 300, "sky").setDisplaySize(800, 600);
+    this.cameras.main.setBackgroundColor("#87ceeb");
 
     this.add.text(400, 60, "ARMURERIE", {
       fontSize: "38px",
