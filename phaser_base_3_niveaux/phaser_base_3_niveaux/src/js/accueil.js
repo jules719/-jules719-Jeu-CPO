@@ -15,23 +15,20 @@ export default class accueil extends Phaser.Scene {
   create() {
     this.cameras.main.setBackgroundColor("#87ceeb");
 
-    // Play background sound only in the intro scene
-    this.introSound = this.sound.add('SonIntro', { loop: true });
-    this.events.on('shutdown', () => {
-      this.introSound.stop();
-    });
+    // Use a single music instance across menu scenes (avoid double-play)
+    this.menuMusic = this.sound.get('SonIntro') || this.sound.add('SonIntro', { loop: true });
 
-    const playIntroSound = () => {
-      if (!this.introSound.isPlaying) {
-        this.introSound.play();
+    const playMenuMusic = () => {
+      if (!this.menuMusic.isPlaying) {
+        this.menuMusic.play();
       }
     };
 
     if (this.sound.context.state === 'running') {
-      playIntroSound();
+      playMenuMusic();
     } else {
       this.input.once('pointerdown', () => {
-        this.sound.context.resume().then(playIntroSound);
+        this.sound.context.resume().then(playMenuMusic);
       });
     }
 
@@ -85,7 +82,9 @@ export default class accueil extends Phaser.Scene {
     });
 
     playButton.on("pointerdown", () => {
-      this.introSound.play();
+      if (this.menuMusic && !this.menuMusic.isPlaying) {
+        this.menuMusic.play();
+      }
       this.scene.start("choixPortes");
     });
 

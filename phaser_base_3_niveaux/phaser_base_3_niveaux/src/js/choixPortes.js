@@ -14,19 +14,20 @@ export default class choixPortes extends Phaser.Scene {
   create() {
     this.cameras.main.setBackgroundColor("#87ceeb");
 
-    // Play background sound in the menus
-    this.introSound = this.sound.add('SonIntro', { loop: true });
-    const playIntroSound = () => {
-      if (!this.introSound.isPlaying) {
-        this.introSound.play();
+    // Keep the menu music continuous across menu scenes
+    this.menuMusic = this.sound.get('SonIntro') || this.sound.add('SonIntro', { loop: true });
+
+    const playMenuMusic = () => {
+      if (!this.menuMusic.isPlaying) {
+        this.menuMusic.play();
       }
     };
 
     if (this.sound.context.state === 'running') {
-      playIntroSound();
+      playMenuMusic();
     } else {
       this.input.once('pointerdown', () => {
-        this.sound.context.resume().then(playIntroSound);
+        this.sound.context.resume().then(playMenuMusic);
       });
     }
 
