@@ -4,43 +4,51 @@ export default class gameplay extends Phaser.Scene {
   }
 
 preload() {
-  this.load.image("sky", "./assets/sky.png");
-  this.load.image("star", "./assets/star.png");
-  this.load.image("bomb", "./assets/bomb.png");
-  this.load.image("bite", "./assets/bite.png");
 
-  this.load.image("tileset", "./assets/zombie_level1_daylight_soviet_abandoned.png");
-  this.load.tilemapTiledJSON("map", "./assets/tiled map 1 soleil projet jeu.tmj");
+  // ===== BASE =====
+  this.load.image("sky", "src/assets/sky.png");
 
-  this.load.spritesheet("dude", "./assets/dude.png", {
+  // ===== PIECES =====
+  // si tu as coin.png il sera utilisé, sinon ton code prendra star
+  this.load.image("piece", "src/assets/piece.png");
+  
+
+  // ===== BOMBES =====
+  this.load.image("bomb", "src/assets/bomb.png");
+
+  // ===== HUMAINS =====
+  // fallback automatique avec bite si human n'existe pas
+  this.load.image("human", "src/assets/human.png");
+ 
+
+  // ===== MAP TILED =====
+  this.load.image(
+    "tileset",
+    "src/assets/zombie_level1_daylight_soviet_abandoned.png"
+  );
+
+  this.load.tilemapTiledJSON(
+    "map",
+    "src/assets/tiled map 1 soleil projet jeu.tmj"
+  );
+
+  // ===== JOUEUR =====
+  this.load.spritesheet("zombie", "src/assets/zombie.png", {
     frameWidth: 32,
     frameHeight: 48
   });
+
+  // ===== SKIN ZOMBIE (optionnel) =====
+  this.load.spritesheet("soldatzombie", "src/assets/soldatzombie.png", {
+    frameWidth: 32,
+    frameHeight: 48
+  });
+
 }
   create() {
-    this.cameras.main.setBackgroundColor("#87ceeb");
-
-this.map = this.make.tilemap({ key: "map" });
-
-this.tileset = this.map.addTilesetImage(
-  "zombie_level1_daylight_soviet_abandoned",
-  "tileset"
-);
-
-console.log("map =", this.map);
-console.log("tileset =", this.tileset);
-console.log("layers =", this.map.layers);
-
-this.groundLayer = this.map.createLayer("Calque de Tuiles 1", this.tileset, 0, 0);
-
-console.log("groundLayer =", this.groundLayer);
-
-if (this.groundLayer) {
-  this.groundLayer.setCollisionBetween(1, 10000);
-}
     this.isGameOver = false;
     this.speed = 230;
-    this.jumpPower = -700;
+    this.jumpPower = -480;
     this.hordeCount = 1;
     this.followers = [];
     this.trail = [];
@@ -52,39 +60,54 @@ if (this.groundLayer) {
     this.registry.set("coinMultiplierReady", false);
     this.coinMultiplierEndTime = 0;
 
+    this.cameras.main.setBackgroundColor("#87ceeb");
+
     // ===== MAP TILED =====
     this.map = this.make.tilemap({ key: "map" });
 
-    // IMPORTANT :
-    // le premier nom doit être EXACTEMENT le nom du tileset dans Tiled
     this.tileset = this.map.addTilesetImage(
       "zombie_level1_daylight_soviet_abandoned",
       "tileset"
     );
 
-    // IMPORTANT :
-    // remplace "Calque de Tuiles 1" par le vrai nom de ton layer dans Tiled
     this.groundLayer = this.map.createLayer("Calque de Tuiles 1", this.tileset, 0, 0);
+    this.decorLayer = this.map.createLayer("Calque de Tuiles 2", this.tileset, 0, 0);
 
-    // Bounds = taille réelle de la map
-    const mapWidthPx = this.map.widthInPixels;
-    const mapHeightPx = this.map.heightInPixels;
-
-    this.physics.world.setBounds(0, 0, mapWidthPx, mapHeightPx);
-    this.cameras.main.setBounds(0, 0, mapWidthPx, mapHeightPx);
-
-    // Si tu as bien mis la propriété sur les tuiles :
     this.groundLayer.setCollisionByProperty({ estSolide: true });
 
-    // Si tu n'as PAS mis de propriété, teste temporairement ça à la place :
-    // this.groundLayer.setCollisionBetween(1, 10000);
+    this.physics.world.setBounds(
+      0,
+      0,
+      this.map.widthInPixels,
+      this.map.heightInPixels
+    );
+
+    this.cameras.main.setBounds(
+      0,
+      0,
+      this.map.widthInPixels,
+      this.map.heightInPixels
+    );
 
     // ===== JOUEUR =====
-    this.player = this.physics.add.sprite(120, 100, "dude");
+    let spawnX = 100;
+    let spawnY = 100;
+
+    for (let y = 0; y < this.map.heightInPixels; y += this.map.tileHeight) {
+      const tile = this.groundLayer.getTileAtWorldXY(spawnX, y, true);
+
+      if (tile && tile.collides) {
+        spawnY = tile.pixelY - 30;
+        break;
+      }
+    }
+
+    this.player = this.physics.add.sprite(spawnX, spawnY, "dude");
     this.player.setScale(1.3);
     this.player.setCollideWorldBounds(false);
-    this.player.body.setSize(20, 40);
-    this.player.body.setOffset(6, 8);
+    this.player.setBounce(0);
+    this.player.body.setSize(32, 48);
+    this.player.body.setOffset(0, 0);
 
     this.applySelectedSkin();
 
@@ -94,6 +117,14 @@ if (this.groundLayer) {
     this.player.anims.play("run", true);
 
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+
+    // DEBUG collisions Tiled
+    const debugGraphics = this.add.graphics().setAlpha(0.7);
+    this.groundLayer.renderDebug(debugGraphics, {
+      tileColor: null,
+      collidingTileColor: new Phaser.Display.Color(255, 0, 0, 120),
+      faceColor: new Phaser.Display.Color(0, 255, 0, 180)
+    });
 
     // Contrôles
     this.cursors = this.input.keyboard.createCursorKeys();
@@ -189,8 +220,13 @@ if (this.groundLayer) {
     const skin = this.registry.get("selectedSkin");
 
     if (skin === "zombie") {
-      this.player.setTint(0x66ff66);
+      if (this.textures.exists("zombie")) {
+        this.player.setTexture("zombie");
+      } else {
+        this.player.setTint(0x66ff66);
+      }
     } else {
+      this.player.setTexture("dude");
       this.player.clearTint();
     }
   }
@@ -216,14 +252,24 @@ if (this.groundLayer) {
 
   placeCoins() {
     const coinPositions = [
-      [500, 490], [620, 490], [740, 490],
-      [920, 490], [980, 490], [1040, 490],
-      [1450, 390], [1560, 390], [1660, 390],
-      [1850, 490], [1960, 490]
+      [500, 490],
+      [620, 490],
+      [740, 490],
+      [920, 490],
+      [980, 490],
+      [1040, 490],
+      [1450, 390],
+      [1560, 390],
+      [1660, 390],
+      [1850, 490],
+      [1960, 490]
     ];
 
     coinPositions.forEach((pos) => {
-      this.coins.create(pos[0], pos[1], "star").setScale(0.8).refreshBody();
+      const coinKey = this.textures.exists("coin") ? "coin" : "star";
+      this.coins.create(pos[0], pos[1], coinKey)
+        .setScale(0.8)
+        .refreshBody();
     });
   }
 
@@ -235,7 +281,11 @@ if (this.groundLayer) {
     ];
 
     humanPositions.forEach((pos) => {
-      this.humans.create(pos[0], pos[1], "bite").setScale(0.8).refreshBody();
+      const humanKey = this.textures.exists("human") ? "human" : "bite";
+      this.humans.create(pos[0], pos[1], humanKey)
+        .setOrigin(0.5, 1)
+        .setScale(0.8)
+        .refreshBody();
     });
   }
 
@@ -247,7 +297,10 @@ if (this.groundLayer) {
     ];
 
     bombPositions.forEach((pos) => {
-      this.bombs.create(pos[0], pos[1], "bomb").setScale(0.8).refreshBody();
+      this.bombs.create(pos[0], pos[1], "bomb")
+        .setOrigin(0.5, 1)
+        .setScale(0.8)
+        .refreshBody();
     });
   }
 
@@ -274,7 +327,11 @@ if (this.groundLayer) {
     follower.anims.play("run", true);
 
     if (this.registry.get("selectedSkin") === "zombie") {
-      follower.setTint(0x66ff66);
+      if (this.textures.exists("zombie")) {
+        follower.setTexture("zombie");
+      } else {
+        follower.setTint(0x66ff66);
+      }
     }
 
     this.followers.push(follower);
@@ -293,12 +350,17 @@ if (this.groundLayer) {
   }
 
   hitBomb() {
-    if (this.isGameOver) return;
+    if (this.isGameOver) {
+      return;
+    }
+
     this.loseLifeOrGameOver("Tu as touche une bombe");
   }
 
   triggerGameOver(title, subtitle) {
-    if (this.isGameOver) return;
+    if (this.isGameOver) {
+      return;
+    }
 
     this.isGameOver = true;
     this.player.setVelocity(0, 0);
@@ -332,7 +394,10 @@ if (this.groundLayer) {
 
   updateMultiplierUI() {
     if (this.coinMultiplierActive) {
-      const remaining = Math.max(0, Math.ceil((this.coinMultiplierEndTime - this.time.now) / 1000));
+      const remaining = Math.max(
+        0,
+        Math.ceil((this.coinMultiplierEndTime - this.time.now) / 1000)
+      );
 
       if (remaining > 0) {
         this.multiplierText.setText("x2 PIECES : " + remaining);
@@ -369,7 +434,10 @@ if (this.groundLayer) {
     if (this.player.body.velocity.y !== 0) {
       this.player.anims.stop();
       this.player.setFrame(5);
-    } else if (!this.player.anims.isPlaying || this.player.anims.currentAnim.key !== "run") {
+    } else if (
+      !this.player.anims.isPlaying ||
+      this.player.anims.currentAnim.key !== "run"
+    ) {
       this.player.anims.play("run", true);
     }
 
