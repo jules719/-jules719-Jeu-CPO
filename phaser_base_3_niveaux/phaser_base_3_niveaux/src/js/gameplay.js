@@ -31,6 +31,9 @@ preload() {
     frameHeight: 48
   });
 
+  // ===== SOUNDS =====
+  this.load.audio("SonGameOver", "src/assets/SonGameOver.mp3");
+
 }
 create() {
   this.isGameOver = false;
@@ -353,6 +356,10 @@ create() {
     if (this.isGameOver) {
       return;
     }
+
+    // Play the game over sound once
+    this.sound.stopByKey('SonJeu');
+    this.sound.play('SonGameOver');
 
     this.isGameOver = true;
     this.player.setVelocity(0, 0);

@@ -183,7 +183,7 @@ this.previewZombie.setFrame(0);
 
     extraLifeBtn.on("pointerdown", () => {
       this.registry.set("extraLifeReady", true);
-      this.sound.play("SonVies");
+      this.sound.play("SonVies", { volume: 3 });
       this.showMessage("Bonus 2 vies activé");
       this.updateBonusVisual();
     });
