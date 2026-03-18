@@ -12,7 +12,11 @@ export default class gameplay extends Phaser.Scene {
     this.load.tilemapTiledJSON("map", "src/assets/test parrallax.tmj");
 
     // ===== ITEMS =====
-    this.load.image("piece", "src/assets/spinning coin.png");
+    this.load.spritesheet("piece", "src/assets/spinning coin.png", {
+      frameWidth: 20,
+      frameHeight: 16
+    });
+
     this.load.image("bomb", "src/assets/bomb.png");
     this.load.image("humain", "src/assets/humain.png");
 
@@ -105,6 +109,7 @@ export default class gameplay extends Phaser.Scene {
     this.physics.add.collider(this.player, this.decorLayer);
 
     this.createAnimations();
+    this.createCoinAnimation();
 
     if (skin === "zombie") {
       this.player.anims.play("run_zombie", true);
@@ -121,7 +126,11 @@ export default class gameplay extends Phaser.Scene {
     this.keyEsc = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
 
     // ===== GROUPES =====
-    this.coins = this.physics.add.staticGroup();
+    this.coins = this.physics.add.group({
+      allowGravity: false,
+      immovable: true
+    });
+
     this.humans = this.physics.add.staticGroup();
     this.bombs = this.physics.add.staticGroup();
 
@@ -257,6 +266,17 @@ export default class gameplay extends Phaser.Scene {
     }
   }
 
+  createCoinAnimation() {
+    if (!this.anims.exists("coin_spin")) {
+      this.anims.create({
+        key: "coin_spin",
+        frames: this.anims.generateFrameNumbers("piece", { start: 0, end: 6 }),
+        frameRate: 10,
+        repeat: -1
+      });
+    }
+  }
+
   placeCoins() {
     const coinPositions = [
       [500, 490],
@@ -273,25 +293,25 @@ export default class gameplay extends Phaser.Scene {
     ];
 
     coinPositions.forEach((pos) => {
-      this.coins.create(pos[0], pos[1], "piece")
-        .setScale(0.8)
-        .setDepth(2.5)
-        .setAngularVelocity(3.14)
-        .refreshBody();
+      const coin = this.coins.create(pos[0], pos[1], "piece", 0);
+      coin.setOrigin(0.5, 1);
+      coin.setScale(2.5);
+      coin.setDepth(2.5);
+      coin.anims.play("coin_spin", true);
     });
   }
 
   placeHumans() {
     const humanPositions = [
-      [820, 495],
-      [1750, 495],
-      [2860, 495]
+      [820, 600],
+      [1850, 600],
+      [2860, 600]
     ];
 
     humanPositions.forEach((pos) => {
       this.humans.create(pos[0], pos[1], "humain")
         .setOrigin(0.5, 1)
-        .setScale(0.8)
+        .setScale(3)
         .setDepth(2.5)
         .refreshBody();
     });
