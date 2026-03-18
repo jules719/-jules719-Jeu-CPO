@@ -158,7 +158,7 @@ this.previewZombie.setFrame(0);
    x2CoinsBtn.on("pointerdown", () => {
   this.registry.set("coinMultiplierReady", true);
 
-  const x2Sound = this.sound.add("SonPieceX2", { volume: 1 });
+  const x2Sound = this.sound.add("SonPieceX2", { volume: 2 });
   x2Sound.play();
 
   this.time.delayedCall(2000, () => {
