@@ -389,7 +389,7 @@ export default class gameplay extends Phaser.Scene {
     bombPositions.forEach((pos) => {
       this.bombs.create(pos[0], pos[1], "bomb")
         .setOrigin(0.5, 1)
-        .setScale(0.8)
+        .setScale(0.1)
         .setDepth(2.5)
         .refreshBody();
     });
@@ -411,8 +411,15 @@ export default class gameplay extends Phaser.Scene {
 
   eatHuman(player, human) {
     human.destroy();
-    this.sound.play("SonManger", { volume: 0.8 });
 
+    this.eatSound = this.sound.add("SonManger", { volume: 0.8 });
+  this.eatSound.play();
+
+  this.time.delayedCall(2000, () => {
+  if (this.eatSound && this.eatSound.isPlaying) {
+    this.eatSound.stop();
+  }
+  });
     this.hordeCount += 1;
     this.hordeText.setText("Horde : " + this.hordeCount);
 
