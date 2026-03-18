@@ -28,7 +28,7 @@ this.load.spritesheet("soldatzombie", "src/assets/soldatzombie.png", {
   create() {
     this.cameras.main.setBackgroundColor("#87ceeb");
 
-    this.menuMusic = this.sound.get("SonIntro") || this.sound.add("SonIntro", { loop: true, volume: 0.6 });
+    this.menuMusic = this.sound.get("SonIntro") || this.sound.add("SonIntro", { loop: true, volume: 2 });
 
     const playMenuMusic = () => {
       if (!this.menuMusic.isPlaying) {
