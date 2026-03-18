@@ -4,11 +4,11 @@ export default class gameplay2 extends Phaser.Scene {
   }
 
   preload() {
-    // ===== MAP PARALLAX LAYERS =====
+    // ===== MAP / TILESETS / BACKGROUNDS =====
+    this.load.image("bgTiles", "src/assets/bg rogner.png");
+    this.load.image("platformTiles", "src/assets/platform.png");
+    this.load.image("farBuildings", "src/assets/far-buildings rogner.png");
     this.load.image("buildings", "src/assets/buildings rogner.png");
-    this.load.image("bg rogner", "src/assets/bg rogner.png");
-    this.load.image("far buildings", "src/assets/far-buildings rogner.png");
-    
 
     this.load.tilemapTiledJSON("map2", "src/assets/map2 potentiel.tmj");
 
@@ -17,8 +17,6 @@ export default class gameplay2 extends Phaser.Scene {
       frameWidth: 20,
       frameHeight: 16
     });
-
-    this.load.image("bomb", "src/assets/bomb.png");
 
     this.load.spritesheet("humain", "src/assets/humain.png", {
       frameWidth: 32,
@@ -35,12 +33,29 @@ export default class gameplay2 extends Phaser.Scene {
       frameWidth: 144,
       frameHeight: 80
     });
+
+    // ===== SONS =====
+    if (!this.cache.audio.exists("SonJeu")) {
+      this.load.audio("SonJeu", "src/assets/SonJeu.mp3");
+    }
+
+    if (!this.cache.audio.exists("SonPiece")) {
+      this.load.audio("SonPiece", "src/assets/SonPiece.mp3");
+    }
+
+    if (!this.cache.audio.exists("SonManger")) {
+      this.load.audio("SonManger", "src/assets/SonManger.mp3");
+    }
+
+    if (!this.cache.audio.exists("SonGameOver")) {
+      this.load.audio("SonGameOver", "src/assets/SonGameOver.mp3");
+    }
   }
 
   create() {
     this.isGameOver = false;
-    this.speed = 230;
-    this.jumpPower = -480;
+    this.speed = 250;
+    this.jumpPower = -500;
     this.hordeCount = 1;
     this.followers = [];
     this.trail = [];
@@ -54,48 +69,68 @@ export default class gameplay2 extends Phaser.Scene {
 
     this.cameras.main.setBackgroundColor("#87ceeb");
 
-    // ===== MAP TILED =====
+    // ===== MUSIQUE =====
+    this.gameMusic = this.sound.get("SonJeu") || this.sound.add("SonJeu", {
+      loop: true,
+      volume: 0.5
+    });
+
+    if (!this.gameMusic.isPlaying) {
+      this.gameMusic.play();
+    }
+
+    // ===== MAP =====
     this.map = this.make.tilemap({ key: "map2" });
 
-    const tileset = this.map.addTilesetImage("bg rogner", "buildings","far buildings");
+    // noms de tilesets dans Tiled
+    const bgTileset = this.map.addTilesetImage("bg rogner", "bgTiles");
+    const platformTileset = this.map.addTilesetImage("platform", "platformTiles");
+
+    const tilesets = [];
+    if (bgTileset) tilesets.push(bgTileset);
+    if (platformTileset) tilesets.push(platformTileset);
 
     const mapWidthPixels = this.map.widthInPixels;
     const mapHeightPixels = this.map.heightInPixels;
 
-    // ===== PARALLAX IMAGE LAYERS =====
-    this.cloudsLayer = this.add.tileSprite(0, 0, mapWidthPixels, mapHeightPixels, "cloud");
-    this.cloudsLayer.setOrigin(0, 0);
-    this.cloudsLayer.setScrollFactor(0.1, 1);
-    this.cloudsLayer.setDepth(-2);
+    // ===== FONDS =====
+    this.farLayer = this.add.tileSprite(0, 0, mapWidthPixels, mapHeightPixels, "farBuildings");
+    this.farLayer.setOrigin(0, 0);
+    this.farLayer.setScrollFactor(0.2, 1);
+    this.farLayer.setDepth(-2);
 
-    this.townLayer = this.add.tileSprite(0, 0, mapWidthPixels, mapHeightPixels, "towns");
-    this.townLayer.setOrigin(0, 0);
-    this.townLayer.setScrollFactor(0.5, 1);
-    this.townLayer.setDepth(-1);
+    this.buildingsLayer = this.add.tileSprite(0, 0, mapWidthPixels, mapHeightPixels, "buildings");
+    this.buildingsLayer.setOrigin(0, 0);
+    this.buildingsLayer.setScrollFactor(0.5, 1);
+    this.buildingsLayer.setDepth(-1);
 
-    // ===== CALQUES TILED =====
-    this.groundLayer = this.map.createLayer("Calque de Tuiles 1", tileset, 0, 0);
-    this.decorLayer = this.map.createLayer("Calque de Tuiles 2", tileset, 0, 0);
+    // ===== CALQUES =====
+    this.groundLayer = this.map.createLayer("Tuiles 1", tilesets, 0, 0);
+    this.decorLayer = this.map.createLayer("Tuiles 2", tilesets, 0, 0);
+    this.topLayer = this.map.createLayer("Tuiles 3", tilesets, 0, 0);
 
     if (this.groundLayer) this.groundLayer.setDepth(1);
     if (this.decorLayer) this.decorLayer.setDepth(2);
+    if (this.topLayer) this.topLayer.setDepth(3);
 
-    this.groundLayer.setCollisionByProperty({ estSolide: true });
-    this.decorLayer.setCollisionByProperty({ estSolide: true });
+    if (this.groundLayer) this.groundLayer.setCollisionByProperty({ estSolide: true });
+    if (this.decorLayer) this.decorLayer.setCollisionByProperty({ estSolide: true });
+    if (this.topLayer) this.topLayer.setCollisionByProperty({ estSolide: true });
 
-    this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
-    this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
+    this.physics.world.setBounds(0, 0, mapWidthPixels, mapHeightPixels);
+    this.cameras.main.setBounds(0, 0, mapWidthPixels, mapHeightPixels);
 
     // ===== JOUEUR =====
     let spawnX = 100;
     let spawnY = 100;
 
-    for (let y = 0; y < this.map.heightInPixels; y += this.map.tileHeight) {
-      const tile = this.groundLayer.getTileAtWorldXY(spawnX, y, true);
-
-      if (tile && tile.collides) {
-        spawnY = tile.pixelY - 60;
-        break;
+    if (this.groundLayer) {
+      for (let y = 0; y < this.map.heightInPixels; y += this.map.tileHeight) {
+        const tile = this.groundLayer.getTileAtWorldXY(spawnX, y, true);
+        if (tile && tile.collides) {
+          spawnY = tile.pixelY - 60;
+          break;
+        }
       }
     }
 
@@ -111,8 +146,9 @@ export default class gameplay2 extends Phaser.Scene {
     this.player.setDepth(10);
     this.player.setFlipX(true); // ogre vers la droite
 
-    this.physics.add.collider(this.player, this.groundLayer);
-    this.physics.add.collider(this.player, this.decorLayer);
+    if (this.groundLayer) this.physics.add.collider(this.player, this.groundLayer);
+    if (this.decorLayer) this.physics.add.collider(this.player, this.decorLayer);
+    if (this.topLayer) this.physics.add.collider(this.player, this.topLayer);
 
     this.createAnimations();
     this.createCoinAnimation();
@@ -143,15 +179,11 @@ export default class gameplay2 extends Phaser.Scene {
       immovable: true
     });
 
-    this.bombs = this.physics.add.staticGroup();
-
     this.placeCoins();
     this.placeHumans();
-    this.placeBombs();
 
     this.physics.add.overlap(this.player, this.coins, this.collectCoin, null, this);
     this.physics.add.overlap(this.player, this.humans, this.eatHuman, null, this);
-    this.physics.add.overlap(this.player, this.bombs, this.hitBomb, null, this);
 
     // ===== UI =====
     this.moneyText = this.add.text(20, 20, "Argent : " + this.registry.get("money"), {
@@ -224,21 +256,6 @@ export default class gameplay2 extends Phaser.Scene {
     }
   }
 
-  applySelectedSkin() {
-    const skin = this.registry.get("selectedSkin");
-
-    if (skin === "zombie") {
-      if (this.textures.exists("zombie")) {
-        this.player.setTexture("zombie");
-      } else {
-        this.player.setTint(0x66ff66);
-      }
-    } else {
-      this.player.setTexture("soldatzombie");
-      this.player.clearTint();
-    }
-  }
-
   createAnimations() {
     if (!this.anims.exists("run_zombie")) {
       this.anims.create({
@@ -281,7 +298,7 @@ export default class gameplay2 extends Phaser.Scene {
     if (!this.anims.exists("coin_spin")) {
       this.anims.create({
         key: "coin_spin",
-        frames: this.anims.generateFrameNumbers("piece", { start: 0, end: 6 }),
+        frames: this.anims.generateFrameNumbers("piece", { start: 0, end: 5 }),
         frameRate: 10,
         repeat: -1
       });
@@ -301,17 +318,13 @@ export default class gameplay2 extends Phaser.Scene {
 
   placeCoins() {
     const coinPositions = [
-      [500, 490],
-      [620, 490],
-      [740, 490],
-      [920, 490],
-      [980, 490],
-      [1040, 490],
-      [1450, 390],
-      [1560, 390],
-      [1660, 390],
-      [1850, 490],
-      [1960, 490]
+      [450, 420],
+      [520, 420],
+      [590, 420],
+      [1100, 360],
+      [1170, 360],
+      [1800, 300],
+      [1870, 300]
     ];
 
     coinPositions.forEach((pos) => {
@@ -325,42 +338,26 @@ export default class gameplay2 extends Phaser.Scene {
 
   placeHumans() {
     const humanPositions = [
-      [820, 600],
-      [1750, 600],
-      [2860, 600]
+      [900, 520],
+      [1600, 520],
+      [2400, 520]
     ];
 
     humanPositions.forEach((pos) => {
       const human = this.humans.create(pos[0], pos[1], "humain", 0);
-
       human.setOrigin(0.5, 1);
       human.setScale(2.2);
       human.setDepth(2.5);
-      human.setFlipX(true); // humain vers la gauche
+      human.setFlipX(true);
       human.body.setAllowGravity(false);
       human.body.setImmovable(true);
       human.anims.play("human_idle", true);
     });
   }
 
-  placeBombs() {
-    const bombPositions = [
-      [1350, 500],
-      [2340, 500],
-      [3470, 500]
-    ];
-
-    bombPositions.forEach((pos) => {
-      this.bombs.create(pos[0], pos[1], "bomb")
-        .setOrigin(0.5, 1)
-        .setScale(0.8)
-        .setDepth(2.5)
-        .refreshBody();
-    });
-  }
-
   collectCoin(player, coin) {
     coin.destroy();
+    this.sound.play("SonPiece", { volume: 0.7 });
 
     let value = 1;
     if (this.coinMultiplierActive && this.time.now < this.coinMultiplierEndTime) {
@@ -374,6 +371,8 @@ export default class gameplay2 extends Phaser.Scene {
 
   eatHuman(player, human) {
     human.destroy();
+    this.sound.play("SonManger", { volume: 0.8 });
+
     this.hordeCount += 1;
     this.hordeText.setText("Horde : " + this.hordeCount);
 
@@ -383,7 +382,7 @@ export default class gameplay2 extends Phaser.Scene {
     const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, followerTexture);
     follower.setScale(1.0);
     follower.setDepth(3);
-    follower.setFlipX(false); // ogre vers la droite
+    follower.setFlipX(true);
 
     if (skin === "zombie") {
       follower.anims.play("run_zombie", true);
@@ -403,21 +402,16 @@ export default class gameplay2 extends Phaser.Scene {
       return;
     }
 
+    if (this.gameMusic && this.gameMusic.isPlaying) {
+      this.gameMusic.stop();
+    }
+
+    this.sound.play("SonGameOver", { volume: 1 });
     this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
   }
 
-  hitBomb() {
-    if (this.isGameOver) {
-      return;
-    }
-
-    this.loseLifeOrGameOver("Tu as touche une bombe");
-  }
-
   triggerGameOver(title, subtitle) {
-    if (this.isGameOver) {
-      return;
-    }
+    if (this.isGameOver) return;
 
     this.isGameOver = true;
     this.player.setVelocity(0, 0);
@@ -478,6 +472,9 @@ export default class gameplay2 extends Phaser.Scene {
 
   update() {
     if (Phaser.Input.Keyboard.JustDown(this.keyEsc)) {
+      if (this.gameMusic && this.gameMusic.isPlaying) {
+        this.gameMusic.stop();
+      }
       this.scene.start("choixPortes");
       return;
     }
@@ -526,8 +523,12 @@ export default class gameplay2 extends Phaser.Scene {
     if (this.player.x >= this.map.widthInPixels - 120) {
       this.player.setVelocityX(0);
       this.isGameOver = true;
-      this.gameOverText.setText("NIVEAU TERMINE");
+      this.gameOverText.setText("NIVEAU 2 TERMINE");
       this.subText.setText("ECHAP = retour aux portes");
+
+      if (this.gameMusic && this.gameMusic.isPlaying) {
+        this.gameMusic.stop();
+      }
     }
   }
 }
