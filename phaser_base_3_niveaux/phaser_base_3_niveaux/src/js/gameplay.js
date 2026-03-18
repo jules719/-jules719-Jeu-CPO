@@ -26,9 +26,27 @@ export default class gameplay extends Phaser.Scene {
       frameWidth: 144,
       frameHeight: 80
     });
+
+    // ===== SOUNDS =====
+    this.load.audio("SonJeu", "src/assets/SonJeu.mp3");
+    this.load.audio("SonGameOver", "src/assets/SonGameOver.mp3");
+    this.load.audio("SonPiece", "src/assets/SonPiece.mp3");
+    this.load.audio("SonManger", "src/assets/SonManger.mp3");
   }
 
   create() {
+    // Stop intro/menu music so it doesn't keep playing during gameplay
+    const introSound = this.sound.get('SonIntro');
+    if (introSound && introSound.isPlaying) {
+      introSound.stop();
+    }
+
+    // Play game music
+    this.gameMusic = this.sound.get('SonJeu') || this.sound.add('SonJeu', { loop: true });
+    if (!this.gameMusic.isPlaying) {
+      this.gameMusic.play();
+    }
+
     this.isGameOver = false;
     this.speed = 230;
     this.jumpPower = -480;
@@ -316,6 +334,14 @@ export default class gameplay extends Phaser.Scene {
   collectCoin(player, coin) {
     coin.destroy();
 
+    // Play coin pickup sound (stop after ~1.5s)
+    const coinSound = this.sound.play('SonPiece');
+    this.time.delayedCall(1500, () => {
+      if (coinSound && coinSound.isPlaying) {
+        coinSound.stop();
+      }
+    });
+
     let value = 1;
     if (this.coinMultiplierActive && this.time.now < this.coinMultiplierEndTime) {
       value = 2;
@@ -328,6 +354,19 @@ export default class gameplay extends Phaser.Scene {
 
   eatHuman(player, human) {
     human.destroy();
+
+    // Play the eat sound and stop it after 2 seconds
+    if (this.eatSound && this.eatSound.isPlaying) {
+      this.eatSound.stop();
+    }
+
+    this.eatSound = this.sound.play('SonManger');
+    this.time.delayedCall(2000, () => {
+      if (this.eatSound && this.eatSound.isPlaying) {
+        this.eatSound.stop();
+      }
+    });
+
     this.hordeCount += 1;
     this.hordeText.setText("Horde : " + this.hordeCount);
 
@@ -355,6 +394,15 @@ export default class gameplay extends Phaser.Scene {
       this.player.setVelocity(0, 0);
       return;
     }
+
+    // Play game over sound when losing
+    this.sound.play('SonGameOver', { volume: 3 });
+
+    // Stop game music and play game over sound
+    if (this.gameMusic && this.gameMusic.isPlaying) {
+      this.gameMusic.stop();
+    }
+    this.sound.play('SonGameOver', { volume: 3 });
 
     this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
   }
@@ -431,6 +479,9 @@ export default class gameplay extends Phaser.Scene {
 
   update() {
     if (Phaser.Input.Keyboard.JustDown(this.keyEsc)) {
+      if (this.gameMusic && this.gameMusic.isPlaying) {
+        this.gameMusic.stop();
+      }
       this.scene.start("choixPortes");
       return;
     }
