@@ -155,17 +155,21 @@ this.previewZombie.setFrame(0);
       align: "center"
     }).setOrigin(0.5);
 
-    x2CoinsBtn.on("pointerdown", () => {
-      this.registry.set("coinMultiplierReady", true);
-      const x2Sound = this.sound.play("SonPieceX2", { volume: 2 });
-      this.time.delayedCall(2000, () => {
-        if (x2Sound && x2Sound.isPlaying) {
-          x2Sound.stop();
-        }
-      });
-      this.showMessage("Bonus x2 pièces activé");
-      this.updateBonusVisual();
-    });
+   x2CoinsBtn.on("pointerdown", () => {
+  this.registry.set("coinMultiplierReady", true);
+
+  const x2Sound = this.sound.add("SonPieceX2", { volume: 1 });
+  x2Sound.play();
+
+  this.time.delayedCall(2000, () => {
+    if (x2Sound && x2Sound.isPlaying) {
+      x2Sound.stop();
+    }
+  });
+
+  this.showMessage("Bonus x2 pièces activé");
+  this.updateBonusVisual();
+});
 
     const extraLifeBtn = this.add.rectangle(540, 490, 230, 70, 0xe67e22)
       .setStrokeStyle(4, 0xffffff)
