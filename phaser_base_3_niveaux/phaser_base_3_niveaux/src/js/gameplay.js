@@ -355,18 +355,15 @@ export default class gameplay extends Phaser.Scene {
   eatHuman(player, human) {
     human.destroy();
 
-    // Play the eat sound and stop it after 2 seconds
-    if (this.eatSound && this.eatSound.isPlaying) {
-      this.eatSound.stop();
-    }
+   const eatSound = this.sound.add('SonManger');
+eatSound.play();
 
-    this.eatSound = this.sound.play('SonManger');
-    this.time.delayedCall(2000, () => {
-      if (this.eatSound && this.eatSound.isPlaying) {
-        this.eatSound.stop();
-      }
-    });
-
+this.time.delayedCall(2000, () => {
+  if (eatSound && eatSound.isPlaying) {
+    eatSound.stop();
+  }
+});
+    
     this.hordeCount += 1;
     this.hordeText.setText("Horde : " + this.hordeCount);
 
