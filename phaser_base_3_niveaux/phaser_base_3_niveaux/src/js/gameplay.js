@@ -18,7 +18,11 @@ export default class gameplay extends Phaser.Scene {
     });
 
     this.load.image("bomb", "src/assets/bomb.png");
-    this.load.image("humain", "src/assets/humain.png");
+
+    this.load.spritesheet("humain", "src/assets/humain.png", {
+      frameWidth: 32,
+      frameHeight: 32
+    });
 
     // ===== PERSONNAGES =====
     this.load.spritesheet("zombie", "src/assets/zombie.png", {
@@ -30,27 +34,9 @@ export default class gameplay extends Phaser.Scene {
       frameWidth: 144,
       frameHeight: 80
     });
-
-    // ===== SOUNDS =====
-    this.load.audio("SonJeu", "src/assets/SonJeu.mp3");
-    this.load.audio("SonGameOver", "src/assets/SonGameOver.mp3");
-    this.load.audio("SonPiece", "src/assets/SonPiece.mp3");
-    this.load.audio("SonManger", "src/assets/SonManger.mp3");
   }
 
   create() {
-    // Stop intro/menu music so it doesn't keep playing during gameplay
-    const introSound = this.sound.get('SonIntro');
-    if (introSound && introSound.isPlaying) {
-      introSound.stop();
-    }
-
-    // Play game music
-    this.gameMusic = this.sound.get('SonJeu') || this.sound.add('SonJeu', { loop: true });
-    if (!this.gameMusic.isPlaying) {
-      this.gameMusic.play();
-    }
-
     this.isGameOver = false;
     this.speed = 230;
     this.jumpPower = -480;
@@ -122,12 +108,14 @@ export default class gameplay extends Phaser.Scene {
     this.player.body.setSize(60, 70);
     this.player.body.setOffset(40, 10);
     this.player.setDepth(10);
+    this.player.setFlipX(true); // ogre vers la droite
 
     this.physics.add.collider(this.player, this.groundLayer);
     this.physics.add.collider(this.player, this.decorLayer);
 
     this.createAnimations();
     this.createCoinAnimation();
+    this.createHumanAnimation();
 
     if (skin === "zombie") {
       this.player.anims.play("run_zombie", true);
@@ -149,7 +137,11 @@ export default class gameplay extends Phaser.Scene {
       immovable: true
     });
 
-    this.humans = this.physics.add.staticGroup();
+    this.humans = this.physics.add.group({
+      allowGravity: false,
+      immovable: true
+    });
+
     this.bombs = this.physics.add.staticGroup();
 
     this.placeCoins();
@@ -295,6 +287,17 @@ export default class gameplay extends Phaser.Scene {
     }
   }
 
+  createHumanAnimation() {
+    if (!this.anims.exists("human_idle")) {
+      this.anims.create({
+        key: "human_idle",
+        frames: this.anims.generateFrameNumbers("humain", { start: 0, end: 3 }),
+        frameRate: 6,
+        repeat: -1
+      });
+    }
+  }
+
   placeCoins() {
     const coinPositions = [
       [500, 490],
@@ -313,7 +316,7 @@ export default class gameplay extends Phaser.Scene {
     coinPositions.forEach((pos) => {
       const coin = this.coins.create(pos[0], pos[1], "piece", 0);
       coin.setOrigin(0.5, 1);
-      coin.setScale(2.5);
+      coin.setScale(1.8);
       coin.setDepth(2.5);
       coin.anims.play("coin_spin", true);
     });
@@ -322,16 +325,20 @@ export default class gameplay extends Phaser.Scene {
   placeHumans() {
     const humanPositions = [
       [820, 600],
-      [1850, 600],
+      [1750, 600],
       [2860, 600]
     ];
 
     humanPositions.forEach((pos) => {
-      this.humans.create(pos[0], pos[1], "humain")
-        .setOrigin(0.5, 1)
-        .setScale(3)
-        .setDepth(2.5)
-        .refreshBody();
+      const human = this.humans.create(pos[0], pos[1], "humain", 0);
+
+      human.setOrigin(0.5, 1);
+      human.setScale(2.2);
+      human.setDepth(2.5);
+      human.setFlipX(true); // humain vers la gauche
+      human.body.setAllowGravity(false);
+      human.body.setImmovable(true);
+      human.anims.play("human_idle", true);
     });
   }
 
@@ -354,14 +361,6 @@ export default class gameplay extends Phaser.Scene {
   collectCoin(player, coin) {
     coin.destroy();
 
-    // Play coin pickup sound (stop after ~1.5s)
-    const coinSound = this.sound.play('SonPiece');
-    this.time.delayedCall(1500, () => {
-      if (coinSound && coinSound.isPlaying) {
-        coinSound.stop();
-      }
-    });
-
     let value = 1;
     if (this.coinMultiplierActive && this.time.now < this.coinMultiplierEndTime) {
       value = 2;
@@ -374,16 +373,6 @@ export default class gameplay extends Phaser.Scene {
 
   eatHuman(player, human) {
     human.destroy();
-
-   const eatSound = this.sound.add('SonManger');
-eatSound.play();
-
-this.time.delayedCall(2000, () => {
-  if (eatSound && eatSound.isPlaying) {
-    eatSound.stop();
-  }
-});
-    
     this.hordeCount += 1;
     this.hordeText.setText("Horde : " + this.hordeCount);
 
@@ -393,6 +382,7 @@ this.time.delayedCall(2000, () => {
     const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, followerTexture);
     follower.setScale(1.0);
     follower.setDepth(3);
+    follower.setFlipX(false); // ogre vers la droite
 
     if (skin === "zombie") {
       follower.anims.play("run_zombie", true);
@@ -411,15 +401,6 @@ this.time.delayedCall(2000, () => {
       this.player.setVelocity(0, 0);
       return;
     }
-
-    // Play game over sound when losing
-    this.sound.play('SonGameOver', { volume: 3 });
-
-    // Stop game music and play game over sound
-    if (this.gameMusic && this.gameMusic.isPlaying) {
-      this.gameMusic.stop();
-    }
-    this.sound.play('SonGameOver', { volume: 3 });
 
     this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
   }
@@ -496,9 +477,6 @@ this.time.delayedCall(2000, () => {
 
   update() {
     if (Phaser.Input.Keyboard.JustDown(this.keyEsc)) {
-      if (this.gameMusic && this.gameMusic.isPlaying) {
-        this.gameMusic.stop();
-      }
       this.scene.start("choixPortes");
       return;
     }
