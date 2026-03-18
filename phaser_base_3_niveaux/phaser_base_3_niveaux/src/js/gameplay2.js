@@ -1,15 +1,16 @@
-export default class gameplay extends Phaser.Scene {
+export default class gameplay2 extends Phaser.Scene {
   constructor() {
-    super("gameplay");
+    super("gameplay2");
   }
 
   preload() {
     // ===== MAP PARALLAX LAYERS =====
-    this.load.image("cloud", "src/assets/cloud.png");
-    this.load.image("towns", "src/assets/towns.png");
-    this.load.image("tiles", "src/assets/tiles.png");
+    this.load.image("buildings", "src/assets/buildings rogner.png");
+    this.load.image("bg rogner", "src/assets/bg rogner.png");
+    this.load.image("far buildings", "src/assets/far-buildings rogner.png");
+    
 
-    this.load.tilemapTiledJSON("map", "src/assets/test parrallax.tmj");
+    this.load.tilemapTiledJSON("map2", "src/assets/map2 potentiel.tmj");
 
     // ===== ITEMS =====
     this.load.spritesheet("piece", "src/assets/spinning coin.png", {
@@ -34,46 +35,9 @@ export default class gameplay extends Phaser.Scene {
       frameWidth: 144,
       frameHeight: 80
     });
-
-    // ===== SONS =====
-    if (!this.cache.audio.exists("SonIntro")) {
-      this.load.audio("SonIntro", "src/assets/SonIntro.mp3");
-    }
-
-    if (!this.cache.audio.exists("SonJeu")) {
-      this.load.audio("SonJeu", "src/assets/SonJeu.mp3");
-    }
-
-    if (!this.cache.audio.exists("SonPiece")) {
-      this.load.audio("SonPiece", "src/assets/SonPiece.mp3");
-    }
-
-    if (!this.cache.audio.exists("SonManger")) {
-      this.load.audio("SonManger", "src/assets/SonManger.mp3");
-    }
-
-    if (!this.cache.audio.exists("SonGameOver")) {
-      this.load.audio("SonGameOver", "src/assets/SonGameOver.mp3");
-    }
   }
 
   create() {
-    // Stop intro/menu music
-    const introSound = this.sound.get("SonIntro");
-    if (introSound && introSound.isPlaying) {
-      introSound.stop();
-    }
-
-    // Play gameplay music
-    this.gameMusic = this.sound.get("SonJeu") || this.sound.add("SonJeu", {
-      loop: true,
-      volume: 0.5
-    });
-
-    if (!this.gameMusic.isPlaying) {
-      this.gameMusic.play();
-    }
-
     this.isGameOver = false;
     this.speed = 230;
     this.jumpPower = -480;
@@ -91,9 +55,9 @@ export default class gameplay extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("#87ceeb");
 
     // ===== MAP TILED =====
-    this.map = this.make.tilemap({ key: "map" });
+    this.map = this.make.tilemap({ key: "map2" });
 
-    const tileset = this.map.addTilesetImage("test", "tiles");
+    const tileset = this.map.addTilesetImage("bg rogner", "buildings","far buildings");
 
     const mapWidthPixels = this.map.widthInPixels;
     const mapHeightPixels = this.map.heightInPixels;
@@ -397,7 +361,6 @@ export default class gameplay extends Phaser.Scene {
 
   collectCoin(player, coin) {
     coin.destroy();
-    this.sound.play("SonPiece", { volume: 0.7 });
 
     let value = 1;
     if (this.coinMultiplierActive && this.time.now < this.coinMultiplierEndTime) {
@@ -411,8 +374,6 @@ export default class gameplay extends Phaser.Scene {
 
   eatHuman(player, human) {
     human.destroy();
-    this.sound.play("SonManger", { volume: 0.8 });
-
     this.hordeCount += 1;
     this.hordeText.setText("Horde : " + this.hordeCount);
 
@@ -422,7 +383,7 @@ export default class gameplay extends Phaser.Scene {
     const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, followerTexture);
     follower.setScale(1.0);
     follower.setDepth(3);
-    follower.setFlipX(true); // ogre vers la droite
+    follower.setFlipX(false); // ogre vers la droite
 
     if (skin === "zombie") {
       follower.anims.play("run_zombie", true);
@@ -441,12 +402,6 @@ export default class gameplay extends Phaser.Scene {
       this.player.setVelocity(0, 0);
       return;
     }
-
-    if (this.gameMusic && this.gameMusic.isPlaying) {
-      this.gameMusic.stop();
-    }
-
-    this.sound.play("SonGameOver", { volume: 1 });
 
     this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
   }
@@ -523,9 +478,6 @@ export default class gameplay extends Phaser.Scene {
 
   update() {
     if (Phaser.Input.Keyboard.JustDown(this.keyEsc)) {
-      if (this.gameMusic && this.gameMusic.isPlaying) {
-        this.gameMusic.stop();
-      }
       this.scene.start("choixPortes");
       return;
     }
@@ -574,16 +526,8 @@ export default class gameplay extends Phaser.Scene {
     if (this.player.x >= this.map.widthInPixels - 120) {
       this.player.setVelocityX(0);
       this.isGameOver = true;
-      this.gameOverText.setText("NIVEAU 1 TERMINE");
-      this.subText.setText("Passage au niveau 2...");
-
-      if (this.gameMusic && this.gameMusic.isPlaying) {
-        this.gameMusic.stop();
-      }
-
-      this.time.delayedCall(1500, () => {
-        this.scene.start("gameplay2");
-      });
+      this.gameOverText.setText("NIVEAU TERMINE");
+      this.subText.setText("ECHAP = retour aux portes");
     }
   }
 }

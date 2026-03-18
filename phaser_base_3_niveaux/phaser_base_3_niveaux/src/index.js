@@ -2,6 +2,8 @@ import accueil from "./js/accueil.js";
 import choixPortes from "./js/choixPortes.js";
 import armurerie from "./js/armurerie.js";
 import gameplay from "./js/gameplay.js";
+import gameplay2 from "./scenes/gameplay2.js";
+
 
 const config = {
   type: Phaser.AUTO,
@@ -18,7 +20,7 @@ const config = {
       debug: false
     }
   },
-  scene: [accueil, choixPortes, armurerie, gameplay]
+  scene: [accueil, choixPortes, armurerie, gameplay, gameplay2]
 };
 
 new Phaser.Game(config);
