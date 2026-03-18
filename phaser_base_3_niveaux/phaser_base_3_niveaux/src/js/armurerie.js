@@ -164,12 +164,21 @@ this.previewZombie.setDepth(5);
       align: "center"
     }).setOrigin(0.5);
 
-    x2CoinsBtn.on("pointerdown", () => {
-      this.registry.set("coinMultiplierReady", true);
-      this.sound.play("SonPieceX2");
-      this.showMessage("Bonus x2 pièces activé");
-      this.updateBonusVisual();
-    });
+   x2CoinsBtn.on("pointerdown", () => {
+  this.registry.set("coinMultiplierReady", true);
+
+  const x2Sound = this.sound.add("SonPieceX2", { volume: 2 });
+  x2Sound.play();
+
+  this.time.delayedCall(2000, () => {
+    if (x2Sound && x2Sound.isPlaying) {
+      x2Sound.stop();
+    }
+  });
+
+  this.showMessage("Bonus x2 pièces activé");
+  this.updateBonusVisual();
+});
 
     const extraLifeBtn = this.add.rectangle(540, 490, 230, 70, 0xe67e22)
       .setStrokeStyle(4, 0xffffff)
@@ -183,7 +192,7 @@ this.previewZombie.setDepth(5);
 
     extraLifeBtn.on("pointerdown", () => {
       this.registry.set("extraLifeReady", true);
-      this.sound.play("SonVies");
+      this.sound.play("SonVies", { volume: 3 });
       this.showMessage("Bonus 2 vies activé");
       this.updateBonusVisual();
     });
