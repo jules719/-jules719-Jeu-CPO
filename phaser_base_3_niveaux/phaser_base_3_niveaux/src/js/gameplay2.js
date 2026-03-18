@@ -5,8 +5,7 @@ export default class gameplay2 extends Phaser.Scene {
 
   preload() {
     // ===== MAP / TILESETS / BACKGROUNDS =====
-    this.load.image("bgTiles", "src/assets/bg rogner.png");
-    this.load.image("platformTiles", "src/assets/platform.png");
+    this.load.image("bg", "src/assets/bg rogner.png");
     this.load.image("farBuildings", "src/assets/far-buildings rogner.png");
     this.load.image("buildings", "src/assets/buildings rogner.png");
 
@@ -82,9 +81,8 @@ export default class gameplay2 extends Phaser.Scene {
     // ===== MAP =====
     this.map = this.make.tilemap({ key: "map2" });
 
-    // noms de tilesets dans Tiled
-    const bgTileset = this.map.addTilesetImage("bg rogner", "bgTiles");
-    const platformTileset = this.map.addTilesetImage("platform", "platformTiles");
+    const bgTileset = this.map.addTilesetImage("skill-foreground",);
+    
 
     const tilesets = [];
     if (bgTileset) tilesets.push(bgTileset);
@@ -113,26 +111,16 @@ export default class gameplay2 extends Phaser.Scene {
     if (this.decorLayer) this.decorLayer.setDepth(2);
     if (this.topLayer) this.topLayer.setDepth(3);
 
-    if (this.groundLayer) this.groundLayer.setCollisionByProperty({ estSolide: true });
-    if (this.decorLayer) this.decorLayer.setCollisionByProperty({ estSolide: true });
-    if (this.topLayer) this.topLayer.setCollisionByProperty({ estSolide: true });
+    if (this.groundLayer) this.groundLayer.setCollisionByExclusion([-1]);
+    if (this.decorLayer) this.decorLayer.setCollisionByExclusion([-1]);
+    if (this.topLayer) this.topLayer.setCollisionByExclusion([-1]);
 
     this.physics.world.setBounds(0, 0, mapWidthPixels, mapHeightPixels);
     this.cameras.main.setBounds(0, 0, mapWidthPixels, mapHeightPixels);
 
     // ===== JOUEUR =====
     let spawnX = 100;
-    let spawnY = 100;
-
-    if (this.groundLayer) {
-      for (let y = 0; y < this.map.heightInPixels; y += this.map.tileHeight) {
-        const tile = this.groundLayer.getTileAtWorldXY(spawnX, y, true);
-        if (tile && tile.collides) {
-          spawnY = tile.pixelY - 60;
-          break;
-        }
-      }
-    }
+    let spawnY = 300;
 
     const skin = this.registry.get("selectedSkin");
     const playerTexture = skin === "zombie" ? "zombie" : "soldatzombie";
@@ -144,7 +132,7 @@ export default class gameplay2 extends Phaser.Scene {
     this.player.body.setSize(60, 70);
     this.player.body.setOffset(40, 10);
     this.player.setDepth(10);
-    this.player.setFlipX(true); // ogre vers la droite
+    this.player.setFlipX(true);
 
     if (this.groundLayer) this.physics.add.collider(this.player, this.groundLayer);
     if (this.decorLayer) this.physics.add.collider(this.player, this.decorLayer);
