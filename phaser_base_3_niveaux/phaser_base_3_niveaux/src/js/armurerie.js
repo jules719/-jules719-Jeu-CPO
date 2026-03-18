@@ -157,7 +157,12 @@ this.previewZombie.setFrame(0);
 
     x2CoinsBtn.on("pointerdown", () => {
       this.registry.set("coinMultiplierReady", true);
-      this.sound.play("SonPieceX2");
+      const x2Sound = this.sound.play("SonPieceX2", { volume: 2 });
+      this.time.delayedCall(2000, () => {
+        if (x2Sound && x2Sound.isPlaying) {
+          x2Sound.stop();
+        }
+      });
       this.showMessage("Bonus x2 pièces activé");
       this.updateBonusVisual();
     });
