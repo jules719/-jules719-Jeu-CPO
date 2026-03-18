@@ -372,10 +372,6 @@ export default class gameplay extends Phaser.Scene {
       return;
     }
 
-    // Play the game over sound once
-    this.sound.stopByKey('SonJeu');
-    this.sound.play('SonGameOver', { volume: 5 });
-
     this.isGameOver = true;
     this.player.setVelocity(0, 0);
 
