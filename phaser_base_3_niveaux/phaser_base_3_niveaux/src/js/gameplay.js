@@ -17,7 +17,10 @@ export default class gameplay extends Phaser.Scene {
       frameHeight: 16
     });
 
-    this.load.image("bomb", "src/assets/bomb.png");
+    this.load.spritesheet("bomb", "src/assets/bomb.png", {
+      frameWidth: 256,
+      frameHeight: 256
+    });
 
     this.load.spritesheet("humain", "src/assets/humain.png", {
       frameWidth: 32,
@@ -116,8 +119,8 @@ export default class gameplay extends Phaser.Scene {
     if (this.groundLayer) this.groundLayer.setDepth(1);
     if (this.decorLayer) this.decorLayer.setDepth(2);
 
-    this.groundLayer.setCollisionByProperty({ estSolide: true });
-    this.decorLayer.setCollisionByProperty({ estSolide: true });
+    if (this.groundLayer) this.groundLayer.setCollisionByProperty({ estSolide: true });
+    if (this.decorLayer) this.decorLayer.setCollisionByProperty({ estSolide: true });
 
     this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
     this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
@@ -145,14 +148,15 @@ export default class gameplay extends Phaser.Scene {
     this.player.body.setSize(60, 70);
     this.player.body.setOffset(40, 10);
     this.player.setDepth(10);
-    this.player.setFlipX(true); // ogre vers la droite
+    this.player.setFlipX(true);
 
-    this.physics.add.collider(this.player, this.groundLayer);
-    this.physics.add.collider(this.player, this.decorLayer);
+    if (this.groundLayer) this.physics.add.collider(this.player, this.groundLayer);
+    if (this.decorLayer) this.physics.add.collider(this.player, this.decorLayer);
 
     this.createAnimations();
     this.createCoinAnimation();
     this.createHumanAnimation();
+    this.createBombAnimation();
 
     if (skin === "zombie") {
       this.player.anims.play("run_zombie", true);
@@ -179,7 +183,10 @@ export default class gameplay extends Phaser.Scene {
       immovable: true
     });
 
-    this.bombs = this.physics.add.staticGroup();
+    this.bombs = this.physics.add.group({
+      allowGravity: false,
+      immovable: true
+    });
 
     this.placeCoins();
     this.placeHumans();
@@ -317,7 +324,7 @@ export default class gameplay extends Phaser.Scene {
     if (!this.anims.exists("coin_spin")) {
       this.anims.create({
         key: "coin_spin",
-        frames: this.anims.generateFrameNumbers("piece", { start: 0, end: 6 }),
+        frames: this.anims.generateFrameNumbers("piece", { start: 0, end: 5 }),
         frameRate: 10,
         repeat: -1
       });
@@ -335,6 +342,25 @@ export default class gameplay extends Phaser.Scene {
     }
   }
 
+  createBombAnimation() {
+  if (!this.anims.exists("bomb_idle")) {
+    this.anims.create({
+      key: "bomb_idle",
+      frames: this.anims.generateFrameNumbers("bomb", { start: 0, end: 5 }),
+      frameRate: 6,
+      repeat: -1
+    });
+  }
+
+  if (!this.anims.exists("bomb_explode")) {
+    this.anims.create({
+      key: "bomb_explode",
+      frames: this.anims.generateFrameNumbers("bomb", { start: 6, end: 23 }),
+      frameRate: 12,
+      repeat: 0
+    });
+  }
+}
   placeCoins() {
     const coinPositions = [
       [500, 490],
@@ -372,7 +398,7 @@ export default class gameplay extends Phaser.Scene {
       human.setOrigin(0.5, 1);
       human.setScale(2.2);
       human.setDepth(2.5);
-      human.setFlipX(true); // humain vers la gauche
+      human.setFlipX(true);
       human.body.setAllowGravity(false);
       human.body.setImmovable(true);
       human.anims.play("human_idle", true);
@@ -380,20 +406,20 @@ export default class gameplay extends Phaser.Scene {
   }
 
   placeBombs() {
-    const bombPositions = [
-      [1350, 500],
-      [2340, 500],
-      [3470, 500]
-    ];
+  const bombPositions = [
+    [1350, 600],
+    [2400, 520],
+    [3000, 500]
+  ];
 
-    bombPositions.forEach((pos) => {
-      this.bombs.create(pos[0], pos[1], "bomb")
-        .setOrigin(0.5, 1)
-        .setScale(0.1)
-        .setDepth(2.5)
-        .refreshBody();
-    });
-  }
+  bombPositions.forEach((pos) => {
+    const bomb = this.bombs.create(pos[0], pos[1], "bomb", 0);
+    bomb.setOrigin(0.5, 1);
+    bomb.setScale(0.3); // 🔥 IMPORTANT (sinon énorme)
+    bomb.setDepth(2.5);
+    bomb.anims.play("bomb_idle", true);
+  });
+}
 
   collectCoin(player, coin) {
     coin.destroy();
@@ -411,15 +437,8 @@ export default class gameplay extends Phaser.Scene {
 
   eatHuman(player, human) {
     human.destroy();
+    this.sound.play("SonManger", { volume: 0.8 });
 
-    this.eatSound = this.sound.add("SonManger", { volume: 0.8 });
-  this.eatSound.play();
-
-  this.time.delayedCall(2000, () => {
-  if (this.eatSound && this.eatSound.isPlaying) {
-    this.eatSound.stop();
-  }
-  });
     this.hordeCount += 1;
     this.hordeText.setText("Horde : " + this.hordeCount);
 
@@ -429,7 +448,7 @@ export default class gameplay extends Phaser.Scene {
     const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, followerTexture);
     follower.setScale(1.0);
     follower.setDepth(3);
-    follower.setFlipX(true); // ogre vers la droite
+    follower.setFlipX(true);
 
     if (skin === "zombie") {
       follower.anims.play("run_zombie", true);
@@ -458,13 +477,22 @@ export default class gameplay extends Phaser.Scene {
     this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
   }
 
-  hitBomb() {
-    if (this.isGameOver) {
-      return;
-    }
+  hitBomb(player, bomb) {
+  if (this.isGameOver) return;
 
-    this.loseLifeOrGameOver("Tu as touche une bombe");
-  }
+  // Stop collision pour éviter bug
+  bomb.body.enable = false;
+
+  // Lance explosion
+  bomb.anims.play("bomb_explode");
+
+  // Quand animation finie → supprimer
+  bomb.on("animationcomplete", () => {
+    bomb.destroy();
+  });
+
+  this.loseLifeOrGameOver("Tu as touche une bombe");
+}
 
   triggerGameOver(title, subtitle) {
     if (this.isGameOver) {

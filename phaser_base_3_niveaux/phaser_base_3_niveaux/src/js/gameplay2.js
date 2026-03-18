@@ -9,6 +9,10 @@ export default class gameplay2 extends Phaser.Scene {
     this.load.image("farBuildings", "src/assets/far-buildings rogner.png");
     this.load.image("buildings", "src/assets/buildings rogner.png");
 
+    this.load.image("TSLAB", "src/assets/tileset_labo_224x192.png");
+    this.load.image("TS", "src/assets/tileset.png");
+    this.load.image("SKILLfg", "src/assets/skill-foreground.png");
+
     this.load.tilemapTiledJSON("map2", "src/assets/map2 potentiel.tmj");
 
     // ===== ITEMS =====
@@ -81,12 +85,11 @@ export default class gameplay2 extends Phaser.Scene {
     // ===== MAP =====
     this.map = this.make.tilemap({ key: "map2" });
 
-    const bgTileset = this.map.addTilesetImage("skill-foreground",);
-    
+    const bgTileset = this.map.addTilesetImage("TSLAB", "TSLAB");
+    const platformTileset = this.map.addTilesetImage("TS", "TS");
+    const skillTileset = this.map.addTilesetImage("SKILLfg", "SKILLfg");
 
-    const tilesets = [];
-    if (bgTileset) tilesets.push(bgTileset);
-    if (platformTileset) tilesets.push(platformTileset);
+    const tilesets = [bgTileset, platformTileset, skillTileset];
 
     const mapWidthPixels = this.map.widthInPixels;
     const mapHeightPixels = this.map.heightInPixels;
