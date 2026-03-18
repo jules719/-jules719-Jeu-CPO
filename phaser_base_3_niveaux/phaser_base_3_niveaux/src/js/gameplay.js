@@ -4,7 +4,13 @@ export default class gameplay extends Phaser.Scene {
   }
 
   preload() {
-    // ===== MAP PARALLAX LAYERS =====
+   // ===== PRELOAD =====
+this.load.spritesheet("bombExplosion", "src/assets/bomb.png", {
+  frameWidth: 32,
+  frameHeight: 32
+});
+
+this.load.image("bombIdle", "src/assets/bomb_idle.png"); // ===== MAP PARALLAX LAYERS =====
     this.load.image("cloud", "src/assets/cloud.png");
     this.load.image("towns", "src/assets/towns.png");
     this.load.image("tiles", "src/assets/tiles.png");
@@ -458,13 +464,38 @@ export default class gameplay extends Phaser.Scene {
     this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
   }
 
-  hitBomb() {
-    if (this.isGameOver) {
-      return;
-    }
+ hitBomb(player, bomb) {
+  if (this.isGameOver) return;
 
+  const explosion = this.add.sprite(bomb.x, bomb.y, "bombExplosion");
+
+  explosion
+    .setOrigin(0.5, 1)
+    .setScale(2)
+    .setDepth(20)
+    .play("bomb_explode");
+
+  bomb.destroy();
+
+  explosion.once("animationcomplete", () => {
+    explosion.destroy();
     this.loseLifeOrGameOver("Tu as touche une bombe");
+  });
+}
+
+createBombAnimation() {
+  if (!this.anims.exists("bomb_explode")) {
+    this.anims.create({
+      key: "bomb_explode",
+      frames: this.anims.generateFrameNumbers("bombExplosion", {
+        start: 0,
+        end: 14
+      }),
+      frameRate: 18,
+      repeat: 0
+    });
   }
+}
 
   triggerGameOver(title, subtitle) {
     if (this.isGameOver) {
