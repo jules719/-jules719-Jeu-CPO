@@ -36,6 +36,12 @@ preload() {
 
 }
 create() {
+  // Stop menu/intro music when gameplay starts
+  const introSound = this.sound.get('SonIntro');
+  if (introSound && introSound.isPlaying) {
+    introSound.stop();
+  }
+
   this.isGameOver = false;
   this.speed = 230;
   this.jumpPower = -480;
@@ -359,7 +365,7 @@ create() {
 
     // Play the game over sound once
     this.sound.stopByKey('SonJeu');
-    this.sound.play('SonGameOver');
+    this.sound.play('SonGameOver', { volume: 5 });
 
     this.isGameOver = true;
     this.player.setVelocity(0, 0);
