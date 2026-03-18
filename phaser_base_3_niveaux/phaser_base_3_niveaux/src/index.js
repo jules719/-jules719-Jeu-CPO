@@ -2,7 +2,7 @@ import accueil from "./js/accueil.js";
 import choixPortes from "./js/choixPortes.js";
 import armurerie from "./js/armurerie.js";
 import gameplay from "./js/gameplay.js";
-import gameplay2 from "./scenes/gameplay2.js";
+import gameplay2 from "./js/gameplay2.js";
 
 
 const config = {
