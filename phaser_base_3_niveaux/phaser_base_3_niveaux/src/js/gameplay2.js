@@ -4,6 +4,8 @@ export default class gameplay2 extends Phaser.Scene {
   }
 
   preload() {
+    console.log("GAMEPLAY2 PRELOAD OK");
+
     // ===== MAP / TILESETS / BACKGROUNDS =====
     this.load.image("bg", "src/assets/bg rogner.png");
     this.load.image("farBuildings", "src/assets/far-buildings rogner.png");
@@ -56,6 +58,8 @@ export default class gameplay2 extends Phaser.Scene {
   }
 
   create() {
+    console.log("GAMEPLAY2 CREATE OK");
+
     this.isGameOver = false;
     this.speed = 250;
     this.jumpPower = -500;
@@ -70,8 +74,6 @@ export default class gameplay2 extends Phaser.Scene {
     this.registry.set("coinMultiplierReady", false);
     this.coinMultiplierEndTime = 0;
 
-    this.cameras.main.setBackgroundColor("#87ceeb");
-
     // ===== MUSIQUE =====
     this.gameMusic = this.sound.get("SonJeu") || this.sound.add("SonJeu", {
       loop: true,
@@ -85,22 +87,27 @@ export default class gameplay2 extends Phaser.Scene {
     // ===== MAP =====
     this.map = this.make.tilemap({ key: "map2" });
 
-    const bgTileset = this.map.addTilesetImage("TSLAB", "TSLAB");
-    const platformTileset = this.map.addTilesetImage("TS", "TS");
-    const skillTileset = this.map.addTilesetImage("SKILLfg", "SKILLfg");
+    const skillTileset = this.map.addTilesetImage("skill-foreground", "SKILLfg");
+    const laboTileset = this.map.addTilesetImage("tileset_labo_224x192", "TSLAB");
+    const ytdhTileset = this.map.addTilesetImage("ytdh", "TS");
 
-    const tilesets = [bgTileset, platformTileset, skillTileset];
+    const tilesets = [skillTileset, laboTileset, ytdhTileset];
 
     const mapWidthPixels = this.map.widthInPixels;
-    const mapHeightPixels = this.map.heightInPixels;
+    const gameHeight = 600;
 
     // ===== FONDS =====
-    this.farLayer = this.add.tileSprite(0, 0, mapWidthPixels, mapHeightPixels, "farBuildings");
+    this.bgLayer = this.add.tileSprite(0, 0, mapWidthPixels, gameHeight, "bg");
+    this.bgLayer.setOrigin(0, 0);
+    this.bgLayer.setScrollFactor(0, 0);
+    this.bgLayer.setDepth(-3);
+
+    this.farLayer = this.add.tileSprite(0, 0, mapWidthPixels, gameHeight, "farBuildings");
     this.farLayer.setOrigin(0, 0);
     this.farLayer.setScrollFactor(0.2, 1);
     this.farLayer.setDepth(-2);
 
-    this.buildingsLayer = this.add.tileSprite(0, 0, mapWidthPixels, mapHeightPixels, "buildings");
+    this.buildingsLayer = this.add.tileSprite(0, 0, mapWidthPixels, gameHeight, "buildings");
     this.buildingsLayer.setOrigin(0, 0);
     this.buildingsLayer.setScrollFactor(0.5, 1);
     this.buildingsLayer.setDepth(-1);
@@ -118,12 +125,13 @@ export default class gameplay2 extends Phaser.Scene {
     if (this.decorLayer) this.decorLayer.setCollisionByExclusion([-1]);
     if (this.topLayer) this.topLayer.setCollisionByExclusion([-1]);
 
-    this.physics.world.setBounds(0, 0, mapWidthPixels, mapHeightPixels);
-    this.cameras.main.setBounds(0, 0, mapWidthPixels, mapHeightPixels);
+    // ===== BOUNDS =====
+    this.physics.world.setBounds(0, 0, mapWidthPixels, gameHeight);
+    this.cameras.main.setBounds(0, 0, mapWidthPixels, gameHeight);
 
     // ===== JOUEUR =====
     let spawnX = 100;
-    let spawnY = 300;
+    let spawnY = 180;
 
     const skin = this.registry.get("selectedSkin");
     const playerTexture = skin === "zombie" ? "zombie" : "soldatzombie";
@@ -507,7 +515,7 @@ export default class gameplay2 extends Phaser.Scene {
     this.updateFollowers();
     this.updateMultiplierUI();
 
-    if (this.player.y > this.map.heightInPixels + 100) {
+    if (this.player.y > 700) {
       this.loseLifeOrGameOver("Tu es tombe dans un trou");
     }
 

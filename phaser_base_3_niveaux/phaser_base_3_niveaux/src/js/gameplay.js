@@ -4,13 +4,7 @@ export default class gameplay extends Phaser.Scene {
   }
 
   preload() {
-   // ===== PRELOAD =====
-this.load.spritesheet("bombExplosion", "src/assets/bomb.png", {
-  frameWidth: 32,
-  frameHeight: 32
-});
-
-this.load.image("bombIdle", "src/assets/bomb_idle.png"); // ===== MAP PARALLAX LAYERS =====
+    // ===== MAP PARALLAX LAYERS =====
     this.load.image("cloud", "src/assets/cloud.png");
     this.load.image("towns", "src/assets/towns.png");
     this.load.image("tiles", "src/assets/tiles.png");
@@ -23,11 +17,11 @@ this.load.image("bombIdle", "src/assets/bomb_idle.png"); // ===== MAP PARALLAX L
       frameHeight: 16
     });
 
-    this.load.spritesheet("bomb", "src/assets/bomb.png", {
-      frameWidth: 256,
-      frameHeight: 256
-    });
-
+    // Bombe : une seule source
+   this.load.spritesheet("bomb", "src/assets/bomb.png", {
+  frameWidth: 256,
+  frameHeight: 256
+});
     this.load.spritesheet("humain", "src/assets/humain.png", {
       frameWidth: 32,
       frameHeight: 32
@@ -101,7 +95,6 @@ this.load.image("bombIdle", "src/assets/bomb_idle.png"); // ===== MAP PARALLAX L
 
     // ===== MAP TILED =====
     this.map = this.make.tilemap({ key: "map" });
-
     const tileset = this.map.addTilesetImage("test", "tiles");
 
     const mapWidthPixels = this.map.widthInPixels;
@@ -362,11 +355,12 @@ this.load.image("bombIdle", "src/assets/bomb_idle.png"); // ===== MAP PARALLAX L
     this.anims.create({
       key: "bomb_explode",
       frames: this.anims.generateFrameNumbers("bomb", { start: 6, end: 23 }),
-      frameRate: 12,
+      frameRate: 14,
       repeat: 0
     });
   }
 }
+
   placeCoins() {
     const coinPositions = [
       [500, 490],
@@ -421,9 +415,10 @@ this.load.image("bombIdle", "src/assets/bomb_idle.png"); // ===== MAP PARALLAX L
   bombPositions.forEach((pos) => {
     const bomb = this.bombs.create(pos[0], pos[1], "bomb", 0);
     bomb.setOrigin(0.5, 1);
-    bomb.setScale(0.3); // 🔥 IMPORTANT (sinon énorme)
+    bomb.setScale(0.3);
     bomb.setDepth(2.5);
     bomb.anims.play("bomb_idle", true);
+    bomb.hasExploded = false;
   });
 }
 
@@ -484,43 +479,22 @@ this.load.image("bombIdle", "src/assets/bomb_idle.png"); // ===== MAP PARALLAX L
     }
 
     this.sound.play("SonGameOver", { volume: 1 });
-
     this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
   }
 
- hitBomb(player, bomb) {
-  if (this.isGameOver) return;
+  hitBomb(player, bomb) {
+  if (this.isGameOver || bomb.hasExploded) return;
 
-  const explosion = this.add.sprite(bomb.x, bomb.y, "bombExplosion");
+  bomb.hasExploded = true;
+  bomb.body.enable = false;
 
-  explosion
-    .setOrigin(0.5, 1)
-    .setScale(2)
-    .setDepth(20)
-    .play("bomb_explode");
+  bomb.play("bomb_explode");
 
-  bomb.destroy();
-
-  explosion.once("animationcomplete", () => {
-    explosion.destroy();
+  bomb.once("animationcomplete", () => {
+    bomb.destroy();
     this.loseLifeOrGameOver("Tu as touche une bombe");
   });
 }
-
-createBombAnimation() {
-  if (!this.anims.exists("bomb_explode")) {
-    this.anims.create({
-      key: "bomb_explode",
-      frames: this.anims.generateFrameNumbers("bombExplosion", {
-        start: 0,
-        end: 14
-      }),
-      frameRate: 18,
-      repeat: 0
-    });
-  }
-}
-
   triggerGameOver(title, subtitle) {
     if (this.isGameOver) {
       return;
