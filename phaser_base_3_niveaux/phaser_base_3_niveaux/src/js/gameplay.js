@@ -126,7 +126,6 @@ export default class gameplay extends Phaser.Scene {
     this.totalLives = savedLives;
     this.registry.set("remainingLives", this.totalLives);
 
-    // On conserve le flag tant qu'une vie n'a pas été absorbée (on ne le réinitialise pas ici).
     this.coinMultiplierActive = this.registry.get("coinMultiplierReady");
     this.registry.set("coinMultiplierReady", false);
     this.coinMultiplierEndTime = 0;
@@ -490,11 +489,7 @@ export default class gameplay extends Phaser.Scene {
   }
 
   updateDoorVisual() {
-    if (this.humansEaten >= this.requiredHumans) {
-      this.doorUnlocked = true;
-    } else {
-      this.doorUnlocked = false;
-    }
+    this.doorUnlocked = this.humansEaten >= this.requiredHumans;
   }
 
   showDoorMessage(message) {
@@ -559,11 +554,9 @@ export default class gameplay extends Phaser.Scene {
   }
 
   loseLifeOrGameOver(reasonText) {
-  const deathX = this.player.x;
-
-  this.totalLives = Math.max(0, this.totalLives - 1);
-  this.livesText.setText("Vies : " + this.totalLives);
-  this.registry.set("remainingLives", this.totalLives);
+    this.totalLives = Math.max(0, this.totalLives - 1);
+    this.livesText.setText("Vies : " + this.totalLives);
+    this.registry.set("remainingLives", this.totalLives);
 
     if (this.totalLives > 0) {
       this.player.setPosition(this.player.x - 120, this.player.y - 100);
@@ -595,25 +588,13 @@ export default class gameplay extends Phaser.Scene {
 
   tryOpenDoor() {
     if (this.isGameOver || this.doorOpening) return;
-    if (this.isGameOver || this.doorOpening) return;
 
     if (!this.doorUnlocked) {
       if (!this.doorMessageCooldown) {
         const remaining = this.requiredHumans - this.humansEaten;
         this.showDoorMessage("Mange encore " + remaining + " humain" + (remaining > 1 ? "s" : ""));
         this.doorMessageCooldown = true;
-    if (!this.doorUnlocked) {
-      if (!this.doorMessageCooldown) {
-        const remaining = this.requiredHumans - this.humansEaten;
-        this.showDoorMessage("Mange encore " + remaining + " humain" + (remaining > 1 ? "s" : ""));
-        this.doorMessageCooldown = true;
 
-        this.time.delayedCall(1200, () => {
-          this.doorMessageCooldown = false;
-        });
-      }
-      return;
-    }
         this.time.delayedCall(1200, () => {
           this.doorMessageCooldown = false;
         });
@@ -625,41 +606,32 @@ export default class gameplay extends Phaser.Scene {
     this.player.setVelocityX(0);
     this.isGameOver = true;
 
-    this.door.play("door_open");
+    // Si tu n'as pas d'anim porte, on fait la transition directement
+    this.gameOverText.setText("NIVEAU 1 TERMINE");
+    this.subText.setText("Passage au niveau 2...");
 
-    this.door.once("animationcomplete", () => {
-      this.gameOverText.setText("NIVEAU 1 TERMINE");
-      this.subText.setText("Passage au niveau 2...");
+    if (this.gameMusic && this.gameMusic.isPlaying) {
+      this.gameMusic.stop();
+    }
 
-      if (this.gameMusic && this.gameMusic.isPlaying) {
-        this.gameMusic.stop();
-      }
+    this.registry.set("remainingLives", this.totalLives);
 
-      this.registry.set("remainingLives", this.totalLives);
-
-      this.time.delayedCall(1200, () => {
-        this.scene.start("gameplay2");
-      });
+    this.time.delayedCall(1200, () => {
+      this.scene.start("gameplay2");
     });
   }
 
   triggerGameOver(title, subtitle) {
-    if (this.isGameOver) {
+    if (this.isGameOver && !this.doorOpening) {
       return;
     }
+
     this.doorOpening = false;
     this.isGameOver = true;
     this.player.setVelocity(0, 0);
 
     const skin = this.registry.get("selectedSkin");
-    const skin = this.registry.get("selectedSkin");
 
-    if (skin === "zombie") {
-      this.player.setFlipX(false);
-      this.player.setFrame(0);
-    } else {
-      this.player.anims.play("idle_soldat", true);
-    }
     if (skin === "zombie") {
       this.player.setFlipX(false);
       this.player.setFrame(0);
@@ -669,20 +641,7 @@ export default class gameplay extends Phaser.Scene {
 
     this.gameOverText.setText(title);
     this.subText.setText(subtitle);
-    this.gameOverText.setText(title);
-    this.subText.setText(subtitle);
 
-    this.followers.forEach((follower) => {
-      if (skin === "zombie") {
-        follower.setFlipX(false);
-        follower.setScale(1.25);
-        follower.setFrame(0);
-      } else {
-        follower.setScale(1.0);
-        follower.anims.play("idle_soldat", true);
-      }
-    });
-  }
     this.followers.forEach((follower) => {
       if (skin === "zombie") {
         follower.setFlipX(false);
