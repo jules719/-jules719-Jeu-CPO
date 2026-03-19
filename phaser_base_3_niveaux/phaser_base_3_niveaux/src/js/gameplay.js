@@ -119,9 +119,14 @@ export default class gameplay extends Phaser.Scene {
     this.doorMessageCooldown = false;
 
     // ===== BONUS ARMURERIE =====
-    this.totalLives = this.registry.get("extraLifeReady") ? 2 : 1;
-    this.registry.set("extraLifeReady", false);
+    let savedLives = this.registry.get("remainingLives");
+    if (savedLives == null || savedLives <= 0) {
+      savedLives = this.registry.get("extraLifeReady") ? 2 : 1;
+    }
+    this.totalLives = savedLives;
+    this.registry.set("remainingLives", this.totalLives);
 
+    // On conserve le flag tant qu'une vie n'a pas été absorbée (on ne le réinitialise pas ici).
     this.coinMultiplierActive = this.registry.get("coinMultiplierReady");
     this.registry.set("coinMultiplierReady", false);
     this.coinMultiplierEndTime = 0;
@@ -554,8 +559,11 @@ export default class gameplay extends Phaser.Scene {
   }
 
   loseLifeOrGameOver(reasonText) {
-    this.totalLives -= 1;
-    this.livesText.setText("Vies : " + this.totalLives);
+  const deathX = this.player.x;
+
+  this.totalLives = Math.max(0, this.totalLives - 1);
+  this.livesText.setText("Vies : " + this.totalLives);
+  this.registry.set("remainingLives", this.totalLives);
 
     if (this.totalLives > 0) {
       this.player.setPosition(this.player.x - 120, this.player.y - 100);
@@ -587,7 +595,13 @@ export default class gameplay extends Phaser.Scene {
 
   tryOpenDoor() {
     if (this.isGameOver || this.doorOpening) return;
+    if (this.isGameOver || this.doorOpening) return;
 
+    if (!this.doorUnlocked) {
+      if (!this.doorMessageCooldown) {
+        const remaining = this.requiredHumans - this.humansEaten;
+        this.showDoorMessage("Mange encore " + remaining + " humain" + (remaining > 1 ? "s" : ""));
+        this.doorMessageCooldown = true;
     if (!this.doorUnlocked) {
       if (!this.doorMessageCooldown) {
         const remaining = this.requiredHumans - this.humansEaten;
@@ -600,17 +614,20 @@ export default class gameplay extends Phaser.Scene {
       }
       return;
     }
+        this.time.delayedCall(1200, () => {
+          this.doorMessageCooldown = false;
+        });
+      }
+      return;
+    }
 
     this.doorOpening = true;
-    this.isGameOver = true;
     this.player.setVelocityX(0);
+    this.isGameOver = true;
 
-    // moitié droite = ouverte
-    this.door.setCrop(this.doorHalfWidth, 0, this.doorHalfWidth, this.doorHeight);
+    this.door.play("door_open");
 
-    this.showDoorMessage("Porte ouverte !");
-
-    this.time.delayedCall(900, () => {
+    this.door.once("animationcomplete", () => {
       this.gameOverText.setText("NIVEAU 1 TERMINE");
       this.subText.setText("Passage au niveau 2...");
 
@@ -618,23 +635,31 @@ export default class gameplay extends Phaser.Scene {
         this.gameMusic.stop();
       }
 
-      this.time.delayedCall(1000, () => {
+      this.registry.set("remainingLives", this.totalLives);
+
+      this.time.delayedCall(1200, () => {
         this.scene.start("gameplay2");
       });
     });
   }
 
   triggerGameOver(title, subtitle) {
-    if (this.isGameOver && !this.doorOpening) {
+    if (this.isGameOver) {
       return;
     }
-
     this.doorOpening = false;
     this.isGameOver = true;
     this.player.setVelocity(0, 0);
 
     const skin = this.registry.get("selectedSkin");
+    const skin = this.registry.get("selectedSkin");
 
+    if (skin === "zombie") {
+      this.player.setFlipX(false);
+      this.player.setFrame(0);
+    } else {
+      this.player.anims.play("idle_soldat", true);
+    }
     if (skin === "zombie") {
       this.player.setFlipX(false);
       this.player.setFrame(0);
@@ -644,7 +669,20 @@ export default class gameplay extends Phaser.Scene {
 
     this.gameOverText.setText(title);
     this.subText.setText(subtitle);
+    this.gameOverText.setText(title);
+    this.subText.setText(subtitle);
 
+    this.followers.forEach((follower) => {
+      if (skin === "zombie") {
+        follower.setFlipX(false);
+        follower.setScale(1.25);
+        follower.setFrame(0);
+      } else {
+        follower.setScale(1.0);
+        follower.anims.play("idle_soldat", true);
+      }
+    });
+  }
     this.followers.forEach((follower) => {
       if (skin === "zombie") {
         follower.setFlipX(false);
