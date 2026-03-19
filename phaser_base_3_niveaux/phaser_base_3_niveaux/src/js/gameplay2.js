@@ -57,12 +57,22 @@ export default class gameplay2 extends Phaser.Scene {
     this.isGameOver = false;
     this.speed = 250;
     this.jumpPower = -500;
-    this.hordeCount = 1;
+    this.hordeCount = 5;
     this.followers = [];
     this.trail = [];
 
-    this.extraLives = this.registry.get("extraLifeReady") ? 1 : 0;
-    this.registry.set("extraLifeReady", false);
+    let savedLives2 = this.registry.get("remainingLives");
+    if (savedLives2 == null || savedLives2 <= 0) {
+      savedLives2 = this.registry.get("extraLifeReady") ? 2 : 1;
+    }
+    this.totalLives = savedLives2;
+    this.registry.set("remainingLives", this.totalLives);
+
+    // Si le joueur a un bonus vie disponible, on l'utilise comme boussole :
+    if (this.registry.get("extraLifeReady") && this.totalLives <= 1) {
+      this.totalLives = 2;
+      this.registry.set("remainingLives", this.totalLives);
+    }
 
     this.coinMultiplierActive = this.registry.get("coinMultiplierReady");
     this.registry.set("coinMultiplierReady", false);
@@ -211,7 +221,7 @@ export default class gameplay2 extends Phaser.Scene {
       strokeThickness: 5
     }).setScrollFactor(0).setDepth(100);
 
-    this.livesText = this.add.text(20, 90, "Vies : " + (1 + this.extraLives), {
+    this.livesText = this.add.text(20, 90, "Vies : " + this.totalLives, {
       fontSize: "24px",
       color: "#ffffff",
       fontStyle: "bold",
@@ -406,24 +416,51 @@ export default class gameplay2 extends Phaser.Scene {
 
     this.followers.push(follower);
   }
+  findRespawnPoint(deathX) {
+  const respawnX = Math.max(100, deathX - 384);
+  let respawnY = 300;
 
-  loseLifeOrGameOver(reasonText) {
-    if (this.extraLives > 0) {
-      this.extraLives -= 1;
-      this.livesText.setText("Vies : " + (1 + this.extraLives));
-      this.player.setPosition(this.player.x - 120, this.player.y - 100);
-      this.player.setVelocity(0, 0);
-      return;
+  for (let y = 0; y < this.map.heightInPixels; y += this.map.tileHeight) {
+    const tile = this.groundLayer.getTileAtWorldXY(respawnX, y, true);
+
+    if (tile && tile.collides) {
+      respawnY = tile.pixelY - 60;
+      break;
     }
-
-    if (this.gameMusic && this.gameMusic.isPlaying) {
-      this.gameMusic.stop();
-    }
-
-    this.sound.play("SonGameOver", { volume: 1 });
-    this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
   }
 
+  return { x: respawnX, y: respawnY };
+}
+  loseLifeOrGameOver(reasonText) {
+  const deathX = this.player.x;
+
+  this.totalLives = Math.max(0, this.totalLives - 1);
+  this.livesText.setText("Vies : " + this.totalLives);
+  this.registry.set("remainingLives", this.totalLives);
+
+  if (this.totalLives > 0) {
+    const respawn = this.findRespawnPoint(deathX);
+    this.player.setPosition(respawn.x, respawn.y);
+    this.player.setVelocity(0, 0);
+    this.isGameOver = false;
+
+    const skin = this.registry.get("selectedSkin");
+    if (skin === "zombie") {
+      this.player.anims.play("run_zombie", true);
+    } else {
+      this.player.anims.play("run_soldat", true);
+    }
+
+    return;
+  }
+
+  if (this.gameMusic && this.gameMusic.isPlaying) {
+    this.gameMusic.stop();
+  }
+
+  this.sound.play("SonGameOver", { volume: 1 });
+  this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
+}
   triggerGameOver(title, subtitle) {
     if (this.isGameOver) return;
 
