@@ -1,17 +1,17 @@
-export default class gameplay2 extends Phaser.Scene {
+export default class gameplay3 extends Phaser.Scene {
   constructor() {
-    super("gameplay2");
+    super("gameplay3");
   }
 
   preload() {
-    // ===== BACKGROUNDS =====
-    this.load.image("bg", "src/assets/bg rogner.png");
-    this.load.image("farBuildings", "src/assets/far-buildings rogner.png");
-    this.load.image("buildings", "src/assets/buildings rogner.png");
+    // ===== FONDS =====
+    this.load.image("bg3", "src/assets/background3.png");
+    this.load.image("backGold3", "src/assets/back-gold2.png");
+    this.load.image("gold3", "src/assets/gold2.png");
 
     // ===== MAP / TILESET =====
-    this.load.image("tilesetMap2", "src/assets/tileset.png");
-    this.load.tilemapTiledJSON("map2", "src/assets/map2 potentiel.tmj");
+    this.load.image("groundMap3", "src/assets/ground.png");
+    this.load.tilemapTiledJSON("map3", "src/assets/map3.tmj");
 
     // ===== ITEMS =====
     this.load.spritesheet("piece", "src/assets/spinning coin.png", {
@@ -79,9 +79,31 @@ export default class gameplay2 extends Phaser.Scene {
     }
 
     // ===== MAP =====
-    this.map = this.make.tilemap({ key: "map2" });
+    this.map = this.make.tilemap({ key: "map3" });
 
-    const mapTileset = this.map.addTilesetImage("tileset", "tilesetMap2");
+    console.log("MAP3 layers :", this.map.layers.map(l => l.name));
+    console.log("MAP3 tilesets :", this.map.tilesets.map(t => t.name));
+
+    // Prend automatiquement le 1er tileset et le 1er layer de la map
+    const tiledTilesetName = this.map.tilesets.length > 0 ? this.map.tilesets[0].name : null;
+    const tiledLayerName = this.map.layers.length > 0 ? this.map.layers[0].name : null;
+
+    if (!tiledTilesetName) {
+      console.error("Aucun tileset trouvé dans map3.tmj");
+      return;
+    }
+
+    if (!tiledLayerName) {
+      console.error("Aucun layer trouvé dans map3.tmj");
+      return;
+    }
+
+    const mapTileset = this.map.addTilesetImage(tiledTilesetName, "groundMap3");
+
+    if (!mapTileset) {
+      console.error("Impossible de lier le tileset :", tiledTilesetName);
+      return;
+    }
 
     const mapWidth = this.map.widthInPixels;
     const mapHeight = this.map.heightInPixels;
@@ -90,47 +112,35 @@ export default class gameplay2 extends Phaser.Scene {
 
     this.cameras.main.setBackgroundColor("#000000");
 
-    // ===== FOND FIXE =====
-    this.bgLayer = this.add.image(screenWidth / 2, screenHeight / 2, "bg");
+    // ===== FOND LE PLUS LOIN =====
+    this.bgLayer = this.add.image(screenWidth / 2, screenHeight / 2, "bg3");
     this.bgLayer.setScrollFactor(0, 0);
     this.bgLayer.setDisplaySize(screenWidth, screenHeight);
     this.bgLayer.setDepth(-30);
 
-    // ===== far-buildings rogner : parallax 0.20 =====
-    this.farLayer = this.add.tileSprite(
-      0,
-      0,
-      screenWidth,
-      screenHeight,
-      "farBuildings"
-    );
-    this.farLayer.setOrigin(0, 0);
-    this.farLayer.setScrollFactor(0, 0);
-    this.farLayer.setDepth(-20);
+    // ===== PARALLAX 0.20 =====
+    this.backLayer = this.add.tileSprite(0, 0, screenWidth, screenHeight, "backGold3");
+    this.backLayer.setOrigin(0, 0);
+    this.backLayer.setScrollFactor(0, 0);
+    this.backLayer.setDepth(-20);
 
-    const farImg = this.textures.get("farBuildings").getSourceImage();
-    this.farLayer.tileScaleY = screenHeight / farImg.height;
+    const backImg = this.textures.get("backGold3").getSourceImage();
+    this.backLayer.tileScaleY = screenHeight / backImg.height;
 
-    // ===== buildings rogner : parallax 0.35 =====
-    this.buildingsLayer = this.add.tileSprite(
-      0,
-      0,
-      screenWidth,
-      screenHeight,
-      "buildings"
-    );
-    this.buildingsLayer.setOrigin(0, 0);
-    this.buildingsLayer.setScrollFactor(0, 0);
-    this.buildingsLayer.setDepth(-10);
+    // ===== PARALLAX 0.35 =====
+    this.frontBgLayer = this.add.tileSprite(0, 0, screenWidth, screenHeight, "gold3");
+    this.frontBgLayer.setOrigin(0, 0);
+    this.frontBgLayer.setScrollFactor(0, 0);
+    this.frontBgLayer.setDepth(-10);
 
-    const buildingsImg = this.textures.get("buildings").getSourceImage();
-    this.buildingsLayer.tileScaleY = screenHeight / buildingsImg.height;
+    const goldImg = this.textures.get("gold3").getSourceImage();
+    this.frontBgLayer.tileScaleY = screenHeight / goldImg.height;
 
-    // ===== UNIQUE LAYER TILED =====
-    this.groundLayer = this.map.createLayer("Calque de Tuiles 1", [mapTileset], 0, 0);
+    // ===== LAYER TILED =====
+    this.groundLayer = this.map.createLayer(tiledLayerName, [mapTileset], 0, 0);
 
     if (!this.groundLayer) {
-      console.error("Layer introuvable : Calque de Tuiles 1");
+      console.error("Layer introuvable :", tiledLayerName);
       return;
     }
 
@@ -278,7 +288,7 @@ export default class gameplay2 extends Phaser.Scene {
     if (!this.anims.exists("idle_zombie")) {
       this.anims.create({
         key: "idle_zombie",
-        frames: [{ key: "zombie", frame: 4 }],
+        frames: [{ key: "zombie", frame: 0 }],
         frameRate: 1
       });
     }
@@ -295,7 +305,7 @@ export default class gameplay2 extends Phaser.Scene {
     if (!this.anims.exists("idle_soldat")) {
       this.anims.create({
         key: "idle_soldat",
-        frames: [{ key: "soldatzombie", frame: 4 }],
+        frames: [{ key: "soldatzombie", frame: 0 }],
         frameRate: 1
       });
     }
@@ -433,14 +443,6 @@ export default class gameplay2 extends Phaser.Scene {
 
     this.gameOverText.setText(title);
     this.subText.setText(subtitle);
-
-    this.followers.forEach((follower) => {
-      if (skin === "zombie") {
-        follower.anims.play("idle_zombie", true);
-      } else {
-        follower.anims.play("idle_soldat", true);
-      }
-    });
   }
 
   updateFollowers() {
@@ -504,8 +506,11 @@ export default class gameplay2 extends Phaser.Scene {
     }
 
     if (this.player.body.velocity.y !== 0) {
-      this.player.anims.stop();
-      this.player.setFrame(4);
+      if (this.registry.get("selectedSkin") === "zombie") {
+        this.player.setFrame(0);
+      } else {
+        this.player.setFrame(0);
+      }
     } else {
       const skin = this.registry.get("selectedSkin");
 
@@ -521,8 +526,14 @@ export default class gameplay2 extends Phaser.Scene {
     }
 
     const camX = this.cameras.main.scrollX;
-    this.farLayer.tilePositionX = camX * 0.20;
-    this.buildingsLayer.tilePositionX = camX * 0.35;
+
+    if (this.backLayer) {
+      this.backLayer.tilePositionX = camX * 0.20;
+    }
+
+    if (this.frontBgLayer) {
+      this.frontBgLayer.tilePositionX = camX * 0.35;
+    }
 
     this.player.setDepth(20);
 
@@ -536,17 +547,12 @@ export default class gameplay2 extends Phaser.Scene {
     if (this.player.x >= this.map.widthInPixels - 120) {
       this.player.setVelocityX(0);
       this.isGameOver = true;
-
-      this.gameOverText.setText("NIVEAU 2 TERMINE");
-      this.subText.setText("Chargement du niveau 3...");
+      this.gameOverText.setText("NIVEAU 3 TERMINE");
+      this.subText.setText("ECHAP = retour aux portes");
 
       if (this.gameMusic && this.gameMusic.isPlaying) {
         this.gameMusic.stop();
       }
-
-      this.time.delayedCall(1200, () => {
-        this.scene.start("gameplay3");
-      });
     }
   }
 }
