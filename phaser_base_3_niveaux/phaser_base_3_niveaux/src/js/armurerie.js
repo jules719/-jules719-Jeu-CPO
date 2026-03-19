@@ -4,17 +4,17 @@ export default class armurerie extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("door3", "src/assets/door3.png");
+    
 
-  this.load.spritesheet("zombie", "src/assets/zombie.png", {
-  frameWidth: 192,
-  frameHeight: 99
-});
+    this.load.spritesheet("zombie", "src/assets/zombie.png", {
+      frameWidth: 192,
+      frameHeight: 99
+    });
 
-this.load.spritesheet("soldatzombie", "src/assets/soldatzombie.png", {
-  frameWidth: 144,
-  frameHeight: 80
-});
+    this.load.spritesheet("soldatzombie", "src/assets/soldatzombie.png", {
+      frameWidth: 144,
+      frameHeight: 80
+    });
 
     if (!this.cache.audio.exists("SonIntro")) {
       this.load.audio("SonIntro", "src/assets/SonIntro.mp3");
@@ -28,7 +28,11 @@ this.load.spritesheet("soldatzombie", "src/assets/soldatzombie.png", {
   create() {
     this.cameras.main.setBackgroundColor("#87ceeb");
 
-    this.menuMusic = this.sound.get("SonIntro") || this.sound.add("SonIntro", { loop: true, volume: 2 });
+    // ===== MUSIQUE =====
+    this.menuMusic = this.sound.get("SonIntro") || this.sound.add("SonIntro", {
+      loop: true,
+      volume: 0.6
+    });
 
     const playMenuMusic = () => {
       if (!this.menuMusic.isPlaying) {
@@ -44,6 +48,7 @@ this.load.spritesheet("soldatzombie", "src/assets/soldatzombie.png", {
       });
     }
 
+    // ===== REGISTRY INIT =====
     if (this.registry.get("selectedSkin") === undefined) {
       this.registry.set("selectedSkin", "soldat");
     }
@@ -54,6 +59,7 @@ this.load.spritesheet("soldatzombie", "src/assets/soldatzombie.png", {
       this.registry.set("extraLifeReady", false);
     }
 
+    // ===== TITRE =====
     this.add.text(400, 45, "ARMURERIE", {
       fontSize: "40px",
       color: "#ffffff",
@@ -70,6 +76,7 @@ this.load.spritesheet("soldatzombie", "src/assets/soldatzombie.png", {
       strokeThickness: 4
     }).setOrigin(0.5);
 
+    // ===== CADRES =====
     this.add.rectangle(240, 270, 300, 290, 0x1f2d3a, 0.85).setStrokeStyle(4, 0xffffff);
     this.add.rectangle(560, 270, 300, 290, 0x1f2d3a, 0.85).setStrokeStyle(4, 0xffffff);
 
@@ -89,22 +96,21 @@ this.load.spritesheet("soldatzombie", "src/assets/soldatzombie.png", {
       strokeThickness: 4
     }).setOrigin(0.5);
 
-    // aperçus fixes
-    // aperçus fixes
-this.previewSoldat = this.add.sprite(240, 230, "soldatzombie", 0);
-this.previewSoldat.setOrigin(0.5, 0.7);
-this.previewSoldat.setScale(1.5);
-this.previewSoldat.setFrame(2);
-this.previewSoldat.setDepth(5);
+    // ===== PREVIEWS =====
+    this.previewSoldat = this.add.sprite(240, 230, "soldatzombie", 0);
+    this.previewSoldat.setOrigin(0.5, 0.7);
+    this.previewSoldat.setScale(1.5);
+    this.previewSoldat.setFrame(2);
 
+    this.previewZombie = this.add.sprite(560, 230, "zombie", 0);
+    this.previewZombie.setOrigin(0.5, 0.7);
+    this.previewZombie.setScale(1.2);
+    this.previewZombie.setFrame(2);
 
-this.previewZombie = this.add.sprite(560, 230, "zombie", 0);
-this.previewZombie.setOrigin(0.5, 0.7);
-this.previewZombie.setScale(1.2);
-this.previewZombie.setFrame(0);
-this.previewZombie.setFrame(2);
-this.previewZombie.setDepth(5);
+    this.add.ellipse(240, 260, 80, 20, 0x000000, 0.3);
+    this.add.ellipse(560, 260, 80, 20, 0x000000, 0.3);
 
+    // ===== BOUTONS SKINS =====
     this.soldatBtn = this.add.rectangle(240, 355, 200, 55, 0x3498db)
       .setStrokeStyle(4, 0xffffff)
       .setInteractive({ useHandCursor: true });
@@ -112,10 +118,6 @@ this.previewZombie.setDepth(5);
     this.zombieBtn = this.add.rectangle(560, 355, 200, 55, 0x27ae60)
       .setStrokeStyle(4, 0xffffff)
       .setInteractive({ useHandCursor: true });
-
-
-    this.add.ellipse(240, 260, 80, 20, 0x000000, 0.3);
-    this.add.ellipse(560, 260, 80, 20, 0x000000, 0.3);
 
     this.add.text(240, 355, "EQUIPER", {
       fontSize: "22px",
@@ -132,17 +134,18 @@ this.previewZombie.setDepth(5);
     this.soldatBtn.on("pointerdown", () => {
       this.registry.set("selectedSkin", "soldat");
       this.sound.play("SonSkin");
-      this.showMessage("Skin soldat equipé");
+      this.showMessage("Skin soldat équipé");
       this.updateSelectionVisual();
     });
 
     this.zombieBtn.on("pointerdown", () => {
       this.registry.set("selectedSkin", "zombie");
       this.sound.play("SonSkin");
-      this.showMessage("Skin zombie equipé");
+      this.showMessage("Skin zombie équipé");
       this.updateSelectionVisual();
     });
 
+    // ===== BONUS =====
     this.add.rectangle(400, 485, 650, 120, 0x16212b, 0.88).setStrokeStyle(4, 0xffffff);
 
     this.add.text(400, 425, "BONUS POUR LA PROCHAINE PARTIE", {
@@ -164,21 +167,19 @@ this.previewZombie.setDepth(5);
       align: "center"
     }).setOrigin(0.5);
 
-   x2CoinsBtn.on("pointerdown", () => {
-  this.registry.set("coinMultiplierReady", true);
+    x2CoinsBtn.on("pointerdown", () => {
+      this.registry.set("coinMultiplierReady", true);
 
-  const x2Sound = this.sound.add("SonPieceX2", { volume: 2 });
-  x2Sound.play();
+      const x2Sound = this.sound.add("SonPieceX2", { volume: 2 });
+      x2Sound.play();
 
-  this.time.delayedCall(2000, () => {
-    if (x2Sound && x2Sound.isPlaying) {
-      x2Sound.stop();
-    }
-  });
+      this.time.delayedCall(2000, () => {
+        if (x2Sound.isPlaying) x2Sound.stop();
+      });
 
-  this.showMessage("Bonus x2 pièces activé");
-  this.updateBonusVisual();
-});
+      this.showMessage("Bonus x2 pièces activé");
+      this.updateBonusVisual();
+    });
 
     const extraLifeBtn = this.add.rectangle(540, 490, 230, 70, 0xe67e22)
       .setStrokeStyle(4, 0xffffff)
@@ -197,6 +198,7 @@ this.previewZombie.setDepth(5);
       this.updateBonusVisual();
     });
 
+    // ===== INFOS =====
     this.skinInfoText = this.add.text(400, 585, "", {
       fontSize: "18px",
       color: "#ffffff",
@@ -213,6 +215,15 @@ this.previewZombie.setDepth(5);
       strokeThickness: 4
     }).setOrigin(0.5);
 
+    this.messageText = this.add.text(400, 655, "", {
+      fontSize: "20px",
+      color: "#ffffff",
+      fontStyle: "bold",
+      stroke: "#000000",
+      strokeThickness: 4
+    }).setOrigin(0.5);
+
+    // ===== BOUTON RETOUR =====
     const backButton = this.add.rectangle(730, 50, 120, 50, 0xe74c3c)
       .setStrokeStyle(4, 0xffffff)
       .setInteractive({ useHandCursor: true });
@@ -227,56 +238,48 @@ this.previewZombie.setDepth(5);
       this.scene.start("choixPortes");
     });
 
-    this.messageText = this.add.text(400, 655, "", {
-      fontSize: "20px",
-      color: "#ffffff",
-      fontStyle: "bold",
-      stroke: "#000000",
-      strokeThickness: 4
-    }).setOrigin(0.5);
-
+    // ===== INITIALISATION VISUELLE =====
     this.updateSelectionVisual();
     this.updateBonusVisual();
   }
 
   updateSelectionVisual() {
-  const skin = this.registry.get("selectedSkin");
+    const skin = this.registry.get("selectedSkin");
 
-  if (skin === "soldat") {
-    this.soldatBtn.setFillStyle(0x2980b9);
-    this.zombieBtn.setFillStyle(0x27ae60);
-    this.skinInfoText.setText("Skin actuel : SOLDAT");
-    this.previewSoldat.setScale(1.65);
-    this.previewZombie.setScale(1.2);
-  } else {
-    this.soldatBtn.setFillStyle(0x3498db);
-    this.zombieBtn.setFillStyle(0x1e8449);
-    this.skinInfoText.setText("Skin actuel : ZOMBIE");
-    this.previewSoldat.setScale(1.5);
-    this.previewZombie.setScale(1.35);
+    if (skin === "soldat") {
+      this.soldatBtn.setFillStyle(0x2980b9);
+      this.zombieBtn.setFillStyle(0x27ae60);
+      this.skinInfoText.setText("Skin actuel : SOLDAT");
+
+      this.previewSoldat.setScale(1.75);
+      this.previewZombie.setScale(1.4);
+    } else {
+      this.soldatBtn.setFillStyle(0x3498db);
+      this.zombieBtn.setFillStyle(0x1e8449);
+      this.skinInfoText.setText("Skin actuel : ZOMBIE");
+
+      this.previewSoldat.setScale(1.6);
+      this.previewZombie.setScale(1.55);
+    }
   }
-}
 
-updateSelectionVisual() {
-  const skin = this.registry.get("selectedSkin");
+  updateBonusVisual() {
+    const coinReady = this.registry.get("coinMultiplierReady");
+    const lifeReady = this.registry.get("extraLifeReady");
 
-  if (skin === "soldat") {
-    this.soldatBtn.setFillStyle(0x2980b9);
-    this.zombieBtn.setFillStyle(0x27ae60);
-    this.skinInfoText.setText("Skin actuel : SOLDAT");
+    let text = "Bonus actifs : ";
 
-    this.previewSoldat.setScale(1.75);
-    this.previewZombie.setScale(1.4);
+    if (!coinReady && !lifeReady) {
+      text += "aucun";
+    } else {
+      const bonuses = [];
+      if (coinReady) bonuses.push("x2 pièces");
+      if (lifeReady) bonuses.push("2 vies");
+      text += bonuses.join(" + ");
+    }
 
-  } else {
-    this.soldatBtn.setFillStyle(0x3498db);
-    this.zombieBtn.setFillStyle(0x1e8449);
-    this.skinInfoText.setText("Skin actuel : ZOMBIE");
-
-    this.previewSoldat.setScale(1.6);
-    this.previewZombie.setScale(1.55);
+    this.bonusInfoText.setText(text);
   }
-}
 
   showMessage(message) {
     this.messageText.setText(message);
