@@ -98,8 +98,13 @@ export default class gameplay2 extends Phaser.Scene {
     this.doorOpening = false;
     this.doorMessageCooldown = false;
 
-    this.extraLives = this.registry.get("extraLifeReady") ? 1 : 0;
-    this.registry.set("extraLifeReady", false);
+    // ===== VIES =====
+    let savedLives = this.registry.get("remainingLives");
+    if (savedLives == null || savedLives <= 0) {
+      savedLives = this.registry.get("extraLifeReady") ? 2 : 1;
+    }
+    this.totalLives = savedLives;
+    this.registry.set("remainingLives", this.totalLives);
 
     this.coinMultiplierActive = this.registry.get("coinMultiplierReady");
     this.registry.set("coinMultiplierReady", false);
@@ -421,9 +426,27 @@ export default class gameplay2 extends Phaser.Scene {
     if (!this.anims.exists("door_open")) {
       this.anims.create({
         key: "door_open",
-        frames: this.anims.generateFrameNumbers("door", { start: 0, end: 5 }),
-        frameRate: 10,
+        frames: this.anims.generateFrameNumbers("door", { start: 0, end: 3 }),
+        frameRate: 8,
         repeat: 0
+      });
+    }
+
+    if (!this.anims.exists("door_idle_open")) {
+      this.anims.create({
+        key: "door_idle_open",
+        frames: [{ key: "door", frame: 3 }],
+        frameRate: 1,
+        repeat: -1
+      });
+    }
+
+    if (!this.anims.exists("door_idle_closed")) {
+      this.anims.create({
+        key: "door_idle_closed",
+        frames: [{ key: "door", frame: 0 }],
+        frameRate: 1,
+        repeat: -1
       });
     }
   }
@@ -435,15 +458,12 @@ export default class gameplay2 extends Phaser.Scene {
       [330, 540],
       [430, 508],
       [540, 540],
-
       [1030, 444],
       [1110, 444],
       [1190, 444],
-
       [1290, 284],
       [1410, 252],
       [1530, 284],
-
       [1810, 444],
       [1940, 380],
       [2470, 316],
@@ -505,6 +525,7 @@ export default class gameplay2 extends Phaser.Scene {
     this.door.setDepth(35);
     this.door.body.allowGravity = false;
     this.door.body.immovable = true;
+    this.door.play("door_idle_closed");
 
     this.exitDoorZone = this.add.zone(doorX, doorBottomY - 60, 110, 140);
     this.physics.add.existing(this.exitDoorZone, true);
@@ -610,32 +631,48 @@ export default class gameplay2 extends Phaser.Scene {
     });
   }
 
-  loseLifeOrGameOver(reasonText) {
-  const deathX = this.player.x;
+  findRespawnPoint(deathX) {
+    const respawnX = Math.max(100, deathX - 250);
+    let respawnY = 480;
 
-  this.totalLives = Math.max(0, this.totalLives - 1);
-  this.livesText.setText("Vies : " + this.totalLives);
-  this.registry.set("remainingLives", this.totalLives);
+    for (let y = 0; y < this.map.heightInPixels; y += this.map.tileHeight) {
+      const tile = this.groundLayer.getTileAtWorldXY(respawnX, y, true);
 
-  if (this.totalLives > 0) {
-    const respawn = this.findRespawnPoint(deathX);
-    this.player.setPosition(respawn.x, respawn.y);
-    this.player.setVelocity(0, 0);
-    this.isGameOver = false;
-
-    const skin = this.registry.get("selectedSkin");
-    if (skin === "zombie") {
-      this.player.anims.play("run_zombie", true);
-    } else {
-      this.player.anims.play("run_soldat", true);
+      if (tile && tile.collides) {
+        respawnY = tile.pixelY - 60;
+        break;
+      }
     }
 
-    return;
+    return { x: respawnX, y: respawnY };
   }
 
-  if (this.gameMusic && this.gameMusic.isPlaying) {
-    this.gameMusic.stop();
-  }
+  loseLifeOrGameOver(reasonText) {
+    const deathX = this.player.x;
+
+    this.totalLives = Math.max(0, this.totalLives - 1);
+    this.livesText.setText("Vies : " + this.totalLives);
+    this.registry.set("remainingLives", this.totalLives);
+
+    if (this.totalLives > 0) {
+      const respawn = this.findRespawnPoint(deathX);
+      this.player.setPosition(respawn.x, respawn.y);
+      this.player.setVelocity(0, 0);
+      this.isGameOver = false;
+
+      const skin = this.registry.get("selectedSkin");
+      if (skin === "zombie") {
+        this.player.anims.play("run_zombie", true);
+      } else {
+        this.player.anims.play("run_soldat", true);
+      }
+
+      return;
+    }
+
+    if (this.gameMusic && this.gameMusic.isPlaying) {
+      this.gameMusic.stop();
+    }
 
     this.sound.play("SonGameOver", { volume: 1 });
     this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
@@ -663,10 +700,11 @@ export default class gameplay2 extends Phaser.Scene {
     this.player.setVelocityY(0);
 
     this.door.play("door_open");
-
     this.showDoorMessage("Porte ouverte !");
 
     this.door.once("animationcomplete", () => {
+      this.door.play("door_idle_open");
+
       this.gameOverText.setText("NIVEAU 2 TERMINE");
       this.subText.setText("Passage au niveau 3...");
 
@@ -771,7 +809,13 @@ export default class gameplay2 extends Phaser.Scene {
 
     if (this.player.body.velocity.y !== 0) {
       this.player.anims.stop();
-      this.player.setFrame(0);
+
+      const skin = this.registry.get("selectedSkin");
+      if (skin === "zombie") {
+        this.player.setFrame(0);
+      } else {
+        this.player.setFrame(4);
+      }
     } else {
       const skin = this.registry.get("selectedSkin");
 
