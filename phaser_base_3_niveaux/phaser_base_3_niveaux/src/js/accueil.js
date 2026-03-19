@@ -5,18 +5,22 @@ export default class accueil extends Phaser.Scene {
 
   preload() {
     // Debug: catch any failures to load assets
-    this.load.on('loaderror', (file) => {
-      console.error('Asset load error:', file.key, file.src);
+    this.load.on("loaderror", (file) => {
+      console.error("Asset load error:", file.key, file.src);
     });
 
-    this.load.audio('SonIntro', 'src/assets/SonIntro.mp3');
+    this.load.image("bgMenu", "src/assets/fond ecran.png");
+    this.load.audio("SonIntro", "src/assets/SonIntro.mp3");
   }
 
   create() {
+    const bg = this.add.image(400, 300, "bgMenu").setDepth(-1);
+    bg.setScale(0.85); // dézoom
+
     this.cameras.main.setBackgroundColor("#87ceeb");
 
     // Use a single music instance across menu scenes (avoid double-play)
-    this.menuMusic = this.sound.get('SonIntro') || this.sound.add('SonIntro', { loop: true });
+    this.menuMusic = this.sound.get("SonIntro") || this.sound.add("SonIntro", { loop: true });
 
     const playMenuMusic = () => {
       if (!this.menuMusic.isPlaying) {
@@ -24,10 +28,10 @@ export default class accueil extends Phaser.Scene {
       }
     };
 
-    if (this.sound.context.state === 'running') {
+    if (this.sound.context.state === "running") {
       playMenuMusic();
     } else {
-      this.input.once('pointerdown', () => {
+      this.input.once("pointerdown", () => {
         this.sound.context.resume().then(playMenuMusic);
       });
     }
@@ -48,7 +52,7 @@ export default class accueil extends Phaser.Scene {
       this.registry.set("extraLifeReady", false);
     }
 
-    this.add.text(400, 140, "ZOMBIE TSUNAMI", {
+    this.add.text(400, 80, "Apocalypse Run", {
       fontSize: "42px",
       color: "#ffffff",
       fontStyle: "bold",
@@ -56,29 +60,22 @@ export default class accueil extends Phaser.Scene {
       strokeThickness: 6
     }).setOrigin(0.5);
 
-    this.add.text(400, 205, "Version de base", {
-      fontSize: "22px",
-      color: "#ffffff",
-      stroke: "#000000",
-      strokeThickness: 4
-    }).setOrigin(0.5);
-
-    const playButton = this.add.rectangle(400, 360, 220, 80, 0x1abc9c)
-      .setStrokeStyle(4, 0xffffff)
+    const playButton = this.add.rectangle(400, 220, 220, 80, 0xffffff)
+      .setStrokeStyle(4, 0x000000)
       .setInteractive({ useHandCursor: true });
 
-    this.add.text(400, 360, "PLAY", {
+    this.add.text(400, 220, "PLAY", {
       fontSize: "32px",
       color: "#000000",
       fontStyle: "bold"
     }).setOrigin(0.5);
 
     playButton.on("pointerover", () => {
-      playButton.setFillStyle(0x16a085);
+      playButton.setFillStyle(0xf0f0f0);
     });
 
     playButton.on("pointerout", () => {
-      playButton.setFillStyle(0x1abc9c);
+      playButton.setFillStyle(0xffffff);
     });
 
     playButton.on("pointerdown", () => {
@@ -87,12 +84,5 @@ export default class accueil extends Phaser.Scene {
       }
       this.scene.start("choixPortes");
     });
-
-    this.add.text(400, 520, "Argent total : " + this.registry.get("money"), {
-      fontSize: "24px",
-      color: "#ffffff",
-      stroke: "#000000",
-      strokeThickness: 4
-    }).setOrigin(0.5);
   }
 }

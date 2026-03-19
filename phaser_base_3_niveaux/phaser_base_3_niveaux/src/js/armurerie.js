@@ -4,7 +4,7 @@ export default class armurerie extends Phaser.Scene {
   }
 
   preload() {
-    
+    this.load.image("bgArmurerie", "src/assets/fond armurerie.png");
 
     this.load.spritesheet("zombie", "src/assets/zombie.png", {
       frameWidth: 192,
@@ -27,6 +27,10 @@ export default class armurerie extends Phaser.Scene {
 
   create() {
     this.cameras.main.setBackgroundColor("#87ceeb");
+
+    // ===== FOND =====
+    const bg = this.add.image(400, 300, "bgArmurerie").setDepth(-10);
+    bg.setDisplaySize(800, 600);
 
     // ===== MUSIQUE =====
     this.menuMusic = this.sound.get("SonIntro") || this.sound.add("SonIntro", {

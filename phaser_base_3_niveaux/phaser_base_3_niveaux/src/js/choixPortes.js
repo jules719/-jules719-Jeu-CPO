@@ -4,18 +4,26 @@ export default class choixPortes extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("door1", "src/assets/door1.png");
-    this.load.image("door2", "src/assets/door2.png");
-    if (!this.cache.audio.exists('SonIntro')) {
-      this.load.audio('SonIntro', 'src/assets/SonIntro.mp3');
+    this.load.image("door1", "src/assets/armurerie.png");
+    this.load.image("door2", "src/assets/gameplay.png");
+    this.load.image("bgPortes", "src/assets/fond porte.png");
+
+    if (!this.cache.audio.exists("SonIntro")) {
+      this.load.audio("SonIntro", "src/assets/SonIntro.mp3");
     }
+
+    this.load.on("loaderror", (file) => {
+      console.error("Erreur chargement asset :", file.key, file.src);
+    });
   }
 
   create() {
-    this.cameras.main.setBackgroundColor("#87ceeb");
+    this.cameras.main.setBackgroundColor("#000000");
 
-    // Keep the menu music continuous across menu scenes
-    this.menuMusic = this.sound.get('SonIntro') || this.sound.add('SonIntro', { loop: true });
+    const bg = this.add.image(400, 300, "bgPortes").setDepth(-1);
+    bg.setDisplaySize(800, 600);
+
+    this.menuMusic = this.sound.get("SonIntro") || this.sound.add("SonIntro", { loop: true });
 
     const playMenuMusic = () => {
       if (!this.menuMusic.isPlaying) {
@@ -23,10 +31,10 @@ export default class choixPortes extends Phaser.Scene {
       }
     };
 
-    if (this.sound.context.state === 'running') {
+    if (this.sound.context.state === "running") {
       playMenuMusic();
     } else {
-      this.input.once('pointerdown', () => {
+      this.input.once("pointerdown", () => {
         this.sound.context.resume().then(playMenuMusic);
       });
     }
@@ -70,14 +78,6 @@ export default class choixPortes extends Phaser.Scene {
       strokeThickness: 4
     }).setOrigin(0.5);
 
-    doorLeft.on("pointerdown", () => {
-      this.scene.start("armurerie");
-    });
-
-    doorRight.on("pointerdown", () => {
-      this.scene.start("gameplay");
-    });
-
     const backButton = this.add.rectangle(100, 50, 120, 45, 0xe74c3c)
       .setStrokeStyle(3, 0xffffff)
       .setInteractive({ useHandCursor: true });
@@ -87,6 +87,14 @@ export default class choixPortes extends Phaser.Scene {
       color: "#ffffff",
       fontStyle: "bold"
     }).setOrigin(0.5);
+
+    doorLeft.on("pointerdown", () => {
+      this.scene.start("armurerie");
+    });
+
+    doorRight.on("pointerdown", () => {
+      this.scene.start("gameplay");
+    });
 
     backButton.on("pointerdown", () => {
       this.scene.start("accueil");
