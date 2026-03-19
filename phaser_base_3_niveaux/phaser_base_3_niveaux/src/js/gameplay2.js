@@ -98,7 +98,12 @@ export default class gameplay2 extends Phaser.Scene {
     this.doorOpening = false;
     this.doorMessageCooldown = false;
 
-    this.extraLives = this.registry.get("extraLifeReady") ? 1 : 0;
+    let savedLives = this.registry.get("remainingLives");
+    if (savedLives == null || savedLives <= 0) {
+      savedLives = this.registry.get("extraLifeReady") ? 2 : 1;
+    }
+    this.totalLives = savedLives;
+    this.registry.set("remainingLives", this.totalLives);
     this.registry.set("extraLifeReady", false);
 
     this.coinMultiplierActive = this.registry.get("coinMultiplierReady");
