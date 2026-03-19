@@ -463,7 +463,7 @@ export default class gameplay2 extends Phaser.Scene {
     const humanPositions = [
       [1080, 480],
       [1780, 480],
-      [3010, 288]
+      [2800, 288]
     ];
 
     humanPositions.forEach((pos) => {
