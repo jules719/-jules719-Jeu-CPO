@@ -4,17 +4,13 @@ export default class gameplay2 extends Phaser.Scene {
   }
 
   preload() {
-    console.log("GAMEPLAY2 PRELOAD OK");
-
-    // ===== MAP / TILESETS / BACKGROUNDS =====
+    // ===== BACKGROUNDS =====
     this.load.image("bg", "src/assets/bg rogner.png");
     this.load.image("farBuildings", "src/assets/far-buildings rogner.png");
     this.load.image("buildings", "src/assets/buildings rogner.png");
 
-    this.load.image("TSLAB", "src/assets/tileset_labo_224x192.png");
-    this.load.image("TS", "src/assets/tileset.png");
-    this.load.image("SKILLfg", "src/assets/skill-foreground.png");
-
+    // ===== MAP / TILESET =====
+    this.load.image("tilesetMap2", "src/assets/tileset.png");
     this.load.tilemapTiledJSON("map2", "src/assets/map2 potentiel.tmj");
 
     // ===== ITEMS =====
@@ -58,8 +54,6 @@ export default class gameplay2 extends Phaser.Scene {
   }
 
   create() {
-    console.log("GAMEPLAY2 CREATE OK");
-
     this.isGameOver = false;
     this.speed = 250;
     this.jumpPower = -500;
@@ -87,51 +81,69 @@ export default class gameplay2 extends Phaser.Scene {
     // ===== MAP =====
     this.map = this.make.tilemap({ key: "map2" });
 
-    const skillTileset = this.map.addTilesetImage("skill-foreground", "SKILLfg");
-    const laboTileset = this.map.addTilesetImage("tileset_labo_224x192", "TSLAB");
-    const ytdhTileset = this.map.addTilesetImage("ytdh", "TS");
+    const mapTileset = this.map.addTilesetImage("tileset", "tilesetMap2");
 
-    const tilesets = [skillTileset, laboTileset, ytdhTileset];
+    const mapWidth = this.map.widthInPixels;
+    const mapHeight = this.map.heightInPixels;
+    const screenWidth = this.scale.width;
+    const screenHeight = this.scale.height;
 
-    const mapWidthPixels = this.map.widthInPixels;
-    const gameHeight = 600;
+    this.cameras.main.setBackgroundColor("#000000");
 
-    // ===== FONDS =====
-    this.bgLayer = this.add.tileSprite(0, 0, mapWidthPixels, gameHeight, "bg");
-    this.bgLayer.setOrigin(0, 0);
+    // ===== FOND FIXE =====
+    this.bgLayer = this.add.image(screenWidth / 2, screenHeight / 2, "bg");
     this.bgLayer.setScrollFactor(0, 0);
-    this.bgLayer.setDepth(-3);
+    this.bgLayer.setDisplaySize(screenWidth, screenHeight);
+    this.bgLayer.setDepth(-30);
 
-    this.farLayer = this.add.tileSprite(0, 0, mapWidthPixels, gameHeight, "farBuildings");
+    // ===== far-buildings rogner : parallax 0.20 =====
+    this.farLayer = this.add.tileSprite(
+      0,
+      0,
+      screenWidth,
+      screenHeight,
+      "farBuildings"
+    );
     this.farLayer.setOrigin(0, 0);
-    this.farLayer.setScrollFactor(0.2, 1);
-    this.farLayer.setDepth(-2);
+    this.farLayer.setScrollFactor(0, 0);
+    this.farLayer.setDepth(-20);
 
-    this.buildingsLayer = this.add.tileSprite(0, 0, mapWidthPixels, gameHeight, "buildings");
+    const farImg = this.textures.get("farBuildings").getSourceImage();
+    this.farLayer.tileScaleY = screenHeight / farImg.height;
+
+    // ===== buildings rogner : parallax 0.35 =====
+    this.buildingsLayer = this.add.tileSprite(
+      0,
+      0,
+      screenWidth,
+      screenHeight,
+      "buildings"
+    );
     this.buildingsLayer.setOrigin(0, 0);
-    this.buildingsLayer.setScrollFactor(0.5, 1);
-    this.buildingsLayer.setDepth(-1);
+    this.buildingsLayer.setScrollFactor(0, 0);
+    this.buildingsLayer.setDepth(-10);
 
-    // ===== CALQUES =====
-    this.groundLayer = this.map.createLayer("Tuiles 1", tilesets, 0, 0);
-    this.decorLayer = this.map.createLayer("Tuiles 2", tilesets, 0, 0);
-    this.topLayer = this.map.createLayer("Tuiles 3", tilesets, 0, 0);
+    const buildingsImg = this.textures.get("buildings").getSourceImage();
+    this.buildingsLayer.tileScaleY = screenHeight / buildingsImg.height;
 
-    if (this.groundLayer) this.groundLayer.setDepth(1);
-    if (this.decorLayer) this.decorLayer.setDepth(2);
-    if (this.topLayer) this.topLayer.setDepth(3);
+    // ===== UNIQUE LAYER TILED =====
+    this.groundLayer = this.map.createLayer("Calque de Tuiles 1", [mapTileset], 0, 0);
 
-    if (this.groundLayer) this.groundLayer.setCollisionByExclusion([-1]);
-    if (this.decorLayer) this.decorLayer.setCollisionByExclusion([-1]);
-    if (this.topLayer) this.topLayer.setCollisionByExclusion([-1]);
+    if (!this.groundLayer) {
+      console.error("Layer introuvable : Calque de Tuiles 1");
+      return;
+    }
+
+    this.groundLayer.setDepth(2);
+    this.groundLayer.setCollisionByProperty({ estSolide: true });
 
     // ===== BOUNDS =====
-    this.physics.world.setBounds(0, 0, mapWidthPixels, gameHeight);
-    this.cameras.main.setBounds(0, 0, mapWidthPixels, gameHeight);
+    this.physics.world.setBounds(0, 0, mapWidth, mapHeight);
+    this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
 
     // ===== JOUEUR =====
     let spawnX = 100;
-    let spawnY = 180;
+    let spawnY = 300;
 
     const skin = this.registry.get("selectedSkin");
     const playerTexture = skin === "zombie" ? "zombie" : "soldatzombie";
@@ -142,12 +154,10 @@ export default class gameplay2 extends Phaser.Scene {
     this.player.setBounce(0);
     this.player.body.setSize(60, 70);
     this.player.body.setOffset(40, 10);
-    this.player.setDepth(10);
+    this.player.setDepth(20);
     this.player.setFlipX(true);
 
-    if (this.groundLayer) this.physics.add.collider(this.player, this.groundLayer);
-    if (this.decorLayer) this.physics.add.collider(this.player, this.decorLayer);
-    if (this.topLayer) this.physics.add.collider(this.player, this.topLayer);
+    this.physics.add.collider(this.player, this.groundLayer);
 
     this.createAnimations();
     this.createCoinAnimation();
@@ -269,8 +279,7 @@ export default class gameplay2 extends Phaser.Scene {
       this.anims.create({
         key: "idle_zombie",
         frames: [{ key: "zombie", frame: 4 }],
-        frameRate: 1,
-        repeat: -1
+        frameRate: 1
       });
     }
 
@@ -287,8 +296,7 @@ export default class gameplay2 extends Phaser.Scene {
       this.anims.create({
         key: "idle_soldat",
         frames: [{ key: "soldatzombie", frame: 4 }],
-        frameRate: 1,
-        repeat: -1
+        frameRate: 1
       });
     }
   }
@@ -330,7 +338,7 @@ export default class gameplay2 extends Phaser.Scene {
       const coin = this.coins.create(pos[0], pos[1], "piece", 0);
       coin.setOrigin(0.5, 1);
       coin.setScale(1.8);
-      coin.setDepth(2.5);
+      coin.setDepth(30);
       coin.anims.play("coin_spin", true);
     });
   }
@@ -346,7 +354,7 @@ export default class gameplay2 extends Phaser.Scene {
       const human = this.humans.create(pos[0], pos[1], "humain", 0);
       human.setOrigin(0.5, 1);
       human.setScale(2.2);
-      human.setDepth(2.5);
+      human.setDepth(30);
       human.setFlipX(true);
       human.body.setAllowGravity(false);
       human.body.setImmovable(true);
@@ -380,7 +388,7 @@ export default class gameplay2 extends Phaser.Scene {
 
     const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, followerTexture);
     follower.setScale(1.0);
-    follower.setDepth(3);
+    follower.setDepth(20);
     follower.setFlipX(true);
 
     if (skin === "zombie") {
@@ -512,10 +520,16 @@ export default class gameplay2 extends Phaser.Scene {
       }
     }
 
+    const camX = this.cameras.main.scrollX;
+    this.farLayer.tilePositionX = camX * 0.20;
+    this.buildingsLayer.tilePositionX = camX * 0.35;
+
+    this.player.setDepth(20);
+
     this.updateFollowers();
     this.updateMultiplierUI();
 
-    if (this.player.y > 700) {
+    if (this.player.y > this.map.heightInPixels + 100) {
       this.loseLifeOrGameOver("Tu es tombe dans un trou");
     }
 
