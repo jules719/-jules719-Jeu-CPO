@@ -27,9 +27,6 @@ export default class gameplay extends Phaser.Scene {
       frameHeight: 32
     });
 
-    // ===== PORTE =====
-    this.load.image("door", "src/assets/door.png");
-
     // ===== PERSONNAGES =====
     this.load.spritesheet("zombie", "src/assets/zombie.png", {
       frameWidth: 144,
@@ -41,6 +38,10 @@ export default class gameplay extends Phaser.Scene {
       frameHeight: 80
     });
 
+    this.load.spritesheet("door", "src/assets/door.png", {
+  frameWidth: 64,
+  frameHeight: 96
+});
     // ===== SONS =====
     if (!this.cache.audio.exists("SonIntro")) {
       this.load.audio("SonIntro", "src/assets/SonIntro.mp3");
@@ -77,7 +78,7 @@ export default class gameplay extends Phaser.Scene {
       this.registry.set("selectedSkin", "zombie");
     }
 
-    // Si le skin soldat n'est pas acheté, on force le zombie
+    // IMPORTANT : si le skin soldat n'est pas acheté, on force le zombie
     if (!this.registry.get("soldatSkinUnlocked")) {
       this.registry.set("selectedSkin", "zombie");
     }
@@ -90,12 +91,13 @@ export default class gameplay extends Phaser.Scene {
       this.registry.set("extraLifeReady", false);
     }
 
-    // ===== MUSIQUE =====
+    // Stop intro/menu music
     const introSound = this.sound.get("SonIntro");
     if (introSound && introSound.isPlaying) {
       introSound.stop();
     }
 
+    // Play gameplay music
     this.gameMusic = this.sound.get("SonJeu") || this.sound.add("SonJeu", {
       loop: true,
       volume: 0.5
@@ -105,7 +107,6 @@ export default class gameplay extends Phaser.Scene {
       this.gameMusic.play();
     }
 
-    // ===== VARIABLES =====
     this.isGameOver = false;
     this.speed = 230;
     this.jumpPower = -480;
@@ -115,12 +116,16 @@ export default class gameplay extends Phaser.Scene {
     this.followers = [];
     this.trail = [];
     this.doorUnlocked = false;
-    this.doorOpening = false;
-    this.doorMessageCooldown = false;
+this.doorOpening = false;
+this.doorMessageCooldown = false;
 
     // ===== BONUS ARMURERIE =====
-    this.totalLives = this.registry.get("extraLifeReady") ? 2 : 1;
-    this.registry.set("extraLifeReady", false);
+    let savedLives = this.registry.get("remainingLives");
+    if (savedLives == null || savedLives <= 0) {
+      savedLives = this.registry.get("extraLifeReady") ? 2 : 1;
+    }
+    this.totalLives = savedLives;
+    this.registry.set("remainingLives", this.totalLives);
 
     this.coinMultiplierActive = this.registry.get("coinMultiplierReady");
     this.registry.set("coinMultiplierReady", false);
@@ -135,7 +140,7 @@ export default class gameplay extends Phaser.Scene {
     const mapWidthPixels = this.map.widthInPixels;
     const mapHeightPixels = this.map.heightInPixels;
 
-    // ===== PARALLAX =====
+    // ===== PARALLAX IMAGE LAYERS =====
     this.cloudsLayer = this.add.tileSprite(0, 0, mapWidthPixels, mapHeightPixels, "cloud");
     this.cloudsLayer.setOrigin(0, 0);
     this.cloudsLayer.setScrollFactor(0.1, 1);
@@ -198,6 +203,7 @@ export default class gameplay extends Phaser.Scene {
     this.createCoinAnimation();
     this.createHumanAnimation();
     this.createBombAnimation();
+    this.createDoorAnimation();
 
     if (this.selectedSkin === "zombie") {
       this.player.setFrame(0);
@@ -391,106 +397,115 @@ export default class gameplay extends Phaser.Scene {
     }
   }
 
+
+  createDoorAnimation() {
+  if (!this.anims.exists("door_open")) {
+    this.anims.create({
+      key: "door_open",
+      frames: this.anims.generateFrameNumbers("door", { start: 0, end: 4 }),
+      frameRate: 8,
+      repeat: 0
+    });
+  }
+}
+
   placeCoins() {
-    const coinPositions = [
-      [192, 600],
-      [256, 600],
-      [640, 600],
-      [704, 600],
-      [1024, 600],
-      [1152, 600],
-      [1280, 600],
-      [1408, 600],
-      [1792, 600],
-      [1920, 600],
-      [2448, 408],
-      [2608, 344],
-      [2784, 280],
-      [2976, 280],
-      [3136, 344],
-      [3280, 408],
-      [3488, 600],
-      [3744, 568],
-      [5424, 600],
-      [6080, 600]
-    ];
+  const coinPositions = [
+    [192, 600],
+    [256, 600],
+    [640, 600],
+    [704, 600],
 
-    coinPositions.forEach((pos) => {
-      const coin = this.coins.create(pos[0], pos[1], "piece", 0);
-      coin.setOrigin(0.5, 1);
-      coin.setScale(1.8);
-      coin.setDepth(2.5);
-      coin.anims.play("coin_spin", true);
-    });
-  }
+    [1024, 600],
+    [1152, 600],
+    [1280, 600],
+    [1408, 600],
 
-  placeHumans() {
-    const humanPositions = [
-      [1100, 600],
-      [1900, 600],
-      [3000, 280],
-      [4300, 500],
-      [5600, 500]
-    ];
+    [1792, 600],
+    [1920, 600],
 
-    humanPositions.forEach((pos) => {
-      const human = this.humans.create(pos[0], pos[1], "humain", 0);
-      human.setOrigin(0.5, 1);
-      human.setScale(2.2);
-      human.setDepth(2.5);
-      human.setFlipX(true);
-      human.body.setAllowGravity(false);
-      human.body.setImmovable(true);
-      human.anims.play("human_idle", true);
-    });
-  }
+    [2448, 408],
+    [2608, 344],
+    [2784, 280],
+    [2976, 280],
+    [3136, 344],
+    [3280, 408],
 
-  placeBombs() {
-    const bombPositions = [
-      [1400, 600],
-      [2350, 600],
-      [3600, 280],
-      [4900, 600],
-      [6000, 300]
-    ];
+    [3488, 600],
+    [3744, 568],
 
-    bombPositions.forEach((pos) => {
-      const bomb = this.bombs.create(pos[0], pos[1], "bomb", 0);
-      bomb.setOrigin(0.5, 1);
-      bomb.setScale(0.3);
-      bomb.setDepth(2.5);
-      bomb.anims.play("bomb_idle", true);
-      bomb.hasExploded = false;
-    });
-  }
+    [5424, 600],
+    [6080, 600]
+  ];
 
+  coinPositions.forEach((pos) => {
+    const coin = this.coins.create(pos[0], pos[1], "piece", 0);
+    coin.setOrigin(0.5, 1);
+    coin.setScale(1.8);
+    coin.setDepth(2.5);
+    coin.anims.play("coin_spin", true);
+  });
+}
+
+ placeHumans() {
+  const humanPositions = [
+    [1100, 600],
+    [1900, 600],
+    [3000, 280],
+    [4300, 500],
+    [5600, 500]
+  ];
+
+  humanPositions.forEach((pos) => {
+    const human = this.humans.create(pos[0], pos[1], "humain", 0);
+    human.setOrigin(0.5, 1);
+    human.setScale(2.2);
+    human.setDepth(2.5);
+    human.setFlipX(true);
+    human.body.setAllowGravity(false);
+    human.body.setImmovable(true);
+    human.anims.play("human_idle", true);
+  });
+}
+ placeBombs() {
+  const bombPositions = [
+    [1400, 600],
+    [2350, 600],
+    [3600, 280],
+    [4900, 600],
+    [6000, 300]
+  ];
+
+  bombPositions.forEach((pos) => {
+    const bomb = this.bombs.create(pos[0], pos[1], "bomb", 0);
+    bomb.setOrigin(0.5, 1);
+    bomb.setScale(0.3);
+    bomb.setDepth(2.5);
+    bomb.anims.play("bomb_idle", true);
+    bomb.hasExploded = false;
+  });
+}
   createDoor() {
-    const doorX = this.map.widthInPixels - 120;
-    const doorBottomY = 650;
+  const doorX = this.map.widthInPixels - 90;
+  const doorBottomY = 600;
 
-    const sourceImage = this.textures.get("door").getSourceImage();
-    this.doorHalfWidth = sourceImage.width / 2;
-    this.doorHeight = sourceImage.height;
+  this.door = this.add.sprite(doorX, doorBottomY, "door");
+  this.door.setOrigin(0.5, 1);
+  this.door.setScale(2);
+  this.door.setDepth(5);
+  this.door.setFrame(0);
 
-    this.door = this.add.image(doorX, doorBottomY, "door");
-    this.door.setOrigin(0.5, 1);
-    this.door.setScale(0.9);
-    this.door.setDepth(20);
-
-    // moitié gauche = fermée
-    this.door.setCrop(0, 0, this.doorHalfWidth, this.doorHeight);
-
-    this.exitDoorZone = this.add.zone(doorX, doorBottomY - 80, 120, 180);
-    this.physics.add.existing(this.exitDoorZone, true);
-  }
+  this.exitDoorZone = this.add.zone(doorX, doorBottomY - 50, 80, 110);
+  this.physics.add.existing(this.exitDoorZone, true);
+}
 
   updateDoorVisual() {
-    if (this.humansEaten >= this.requiredHumans) {
-      this.doorUnlocked = true;
-    } else {
-      this.doorUnlocked = false;
-    }
+  if (this.humansEaten >= this.requiredHumans) {
+    this.doorUnlocked = true;
+  } else {
+    this.doorUnlocked = false;
   }
+}
 
   showDoorMessage(message) {
     this.doorInfoText.setText(message);
@@ -521,55 +536,81 @@ export default class gameplay extends Phaser.Scene {
 
   eatHuman(player, human) {
     human.destroy();
-    this.sound.play("SonManger", { volume: 0.8 });
 
-    this.hordeCount += 1;
-    this.humansEaten += 1;
+    const sonManger = this.sound.add("SonManger", { volume: 0.8 });
+    sonManger.play();
 
-    this.hordeText.setText("Horde : " + this.hordeCount);
-    this.objectiveText.setText("Humains mangés : " + this.humansEaten + " / " + this.requiredHumans);
+    this.time.delayedCall(2000, () => {
+      if (sonManger && sonManger.isPlaying) {
+        sonManger.stop();
+      }
+    });
 
-    const skin = this.registry.get("selectedSkin");
-    const followerTexture = skin === "zombie" ? "zombie" : "soldatzombie";
+  this.hordeCount += 1;
+  this.humansEaten += 1;
 
-    const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, followerTexture);
-    follower.setDepth(3);
-    follower.setFlipX(true);
+  this.hordeText.setText("Horde : " + this.hordeCount);
+  this.objectiveText.setText("Humains mangés : " + this.humansEaten + " / " + this.requiredHumans);
 
-    if (skin === "zombie") {
-      follower.setScale(1.25);
-      follower.setFrame(0);
-    } else {
-      follower.setScale(1.0);
-      follower.anims.play("run_soldat", true);
-    }
+  const skin = this.registry.get("selectedSkin");
+  const followerTexture = skin === "zombie" ? "zombie" : "soldatzombie";
 
-    this.followers.push(follower);
+  const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, followerTexture);
+  follower.setDepth(3);
+  follower.setFlipX(false);
 
-    this.updateDoorVisual();
+  if (skin === "zombie") {
+    follower.setScale(1.25);
+    follower.setFrame(0);
+  } else {
+    follower.setScale(1.0);
+    follower.anims.play("run_soldat", true);
+  }
 
-    if (this.humansEaten >= this.requiredHumans) {
-      this.showDoorMessage("La porte est ouverte !");
+  this.followers.push(follower);
+
+  this.updateDoorVisual();
+
+  if (this.humansEaten >= this.requiredHumans) {
+    this.showDoorMessage("La porte est ouverte !");
+  }
+}
+findRespawnPoint(deathX) {
+  const respawnX = Math.max(100, deathX - 320);
+  let respawnY = 100;
+
+  for (let y = 0; y < this.map.heightInPixels; y += this.map.tileHeight) {
+    const tile = this.groundLayer.getTileAtWorldXY(respawnX, y, true);
+
+    if (tile && tile.collides) {
+      respawnY = tile.pixelY - 60;
+      break;
     }
   }
 
+  return { x: respawnX, y: respawnY };
+}
   loseLifeOrGameOver(reasonText) {
-    this.totalLives -= 1;
+    this.totalLives = Math.max(0, this.totalLives - 1);
     this.livesText.setText("Vies : " + this.totalLives);
+    this.registry.set("remainingLives", this.totalLives);
 
-    if (this.totalLives > 0) {
-      this.player.setPosition(this.player.x - 120, this.player.y - 100);
-      this.player.setVelocity(0, 0);
-      return;
-    }
+  if (this.totalLives > 0) {
+    const respawn = this.findRespawnPoint(deathX);
 
-    if (this.gameMusic && this.gameMusic.isPlaying) {
-      this.gameMusic.stop();
-    }
+    this.player.setPosition(respawn.x, respawn.y);
+    this.player.setVelocity(0, 0);
 
-    this.sound.play("SonGameOver", { volume: 1 });
-    this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
+    return;
   }
+
+  if (this.gameMusic && this.gameMusic.isPlaying) {
+    this.gameMusic.stop();
+  }
+
+  this.sound.play("SonGameOver", { volume: 1 });
+  this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
+}
 
   hitBomb(player, bomb) {
     if (this.isGameOver || bomb.hasExploded) return;
@@ -602,25 +643,21 @@ export default class gameplay extends Phaser.Scene {
     }
 
     this.doorOpening = true;
-    this.isGameOver = true;
     this.player.setVelocityX(0);
+    this.isGameOver = true;
 
-    // moitié droite = ouverte
-    this.door.setCrop(this.doorHalfWidth, 0, this.doorHalfWidth, this.doorHeight);
+    // Si tu n'as pas d'anim porte, on fait la transition directement
+    this.gameOverText.setText("NIVEAU 1 TERMINE");
+    this.subText.setText("Passage au niveau 2...");
 
-    this.showDoorMessage("Porte ouverte !");
+    if (this.gameMusic && this.gameMusic.isPlaying) {
+      this.gameMusic.stop();
+    }
 
-    this.time.delayedCall(900, () => {
-      this.gameOverText.setText("NIVEAU 1 TERMINE");
-      this.subText.setText("Passage au niveau 2...");
+    this.registry.set("remainingLives", this.totalLives);
 
-      if (this.gameMusic && this.gameMusic.isPlaying) {
-        this.gameMusic.stop();
-      }
-
-      this.time.delayedCall(1000, () => {
-        this.scene.start("gameplay2");
-      });
+    this.time.delayedCall(1200, () => {
+      this.scene.start("gameplay2");
     });
   }
 
@@ -701,7 +738,7 @@ export default class gameplay extends Phaser.Scene {
     }
 
     if (this.isGameOver) {
-      if (Phaser.Input.Keyboard.JustDown(this.keyR) && !this.doorOpening) {
+      if (Phaser.Input.Keyboard.JustDown(this.keyR)) {
         this.scene.restart();
       }
       return;

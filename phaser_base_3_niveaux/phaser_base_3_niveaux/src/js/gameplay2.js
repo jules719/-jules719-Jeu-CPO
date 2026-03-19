@@ -266,7 +266,7 @@ export default class gameplay2 extends Phaser.Scene {
       strokeThickness: 5
     }).setScrollFactor(0).setDepth(100);
 
-    this.livesText = this.add.text(20, 90, "Vies : " + (1 + this.extraLives), {
+    this.livesText = this.add.text(20, 90, "Vies : " + this.totalLives, {
       fontSize: "24px",
       color: "#ffffff",
       fontStyle: "bold",
@@ -611,17 +611,31 @@ export default class gameplay2 extends Phaser.Scene {
   }
 
   loseLifeOrGameOver(reasonText) {
-    if (this.extraLives > 0) {
-      this.extraLives -= 1;
-      this.livesText.setText("Vies : " + (1 + this.extraLives));
-      this.player.setPosition(this.player.x - 120, this.player.y - 100);
-      this.player.setVelocity(0, 0);
-      return;
+  const deathX = this.player.x;
+
+  this.totalLives = Math.max(0, this.totalLives - 1);
+  this.livesText.setText("Vies : " + this.totalLives);
+  this.registry.set("remainingLives", this.totalLives);
+
+  if (this.totalLives > 0) {
+    const respawn = this.findRespawnPoint(deathX);
+    this.player.setPosition(respawn.x, respawn.y);
+    this.player.setVelocity(0, 0);
+    this.isGameOver = false;
+
+    const skin = this.registry.get("selectedSkin");
+    if (skin === "zombie") {
+      this.player.anims.play("run_zombie", true);
+    } else {
+      this.player.anims.play("run_soldat", true);
     }
 
-    if (this.gameMusic && this.gameMusic.isPlaying) {
-      this.gameMusic.stop();
-    }
+    return;
+  }
+
+  if (this.gameMusic && this.gameMusic.isPlaying) {
+    this.gameMusic.stop();
+  }
 
     this.sound.play("SonGameOver", { volume: 1 });
     this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
