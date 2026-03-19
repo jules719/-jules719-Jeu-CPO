@@ -530,9 +530,17 @@ this.doorMessageCooldown = false;
     this.moneyText.setText("Argent : " + this.registry.get("money"));
   }
 
-eatHuman(player, human) {
-  human.destroy();
-  this.sound.play("SonManger", { volume: 0.8 });
+  eatHuman(player, human) {
+    human.destroy();
+
+    const sonManger = this.sound.add("SonManger", { volume: 0.8 });
+    sonManger.play();
+
+    this.time.delayedCall(2000, () => {
+      if (sonManger && sonManger.isPlaying) {
+        sonManger.stop();
+      }
+    });
 
   this.hordeCount += 1;
   this.humansEaten += 1;
