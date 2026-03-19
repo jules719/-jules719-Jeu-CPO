@@ -19,9 +19,9 @@ export default class gameplay3 extends Phaser.Scene {
       frameHeight: 16
     });
 
-    this.load.spritesheet("humain", "src/assets/humain.png", {
-      frameWidth: 32,
-      frameHeight: 32
+    this.load.spritesheet("bomb", "src/assets/bomb.png", {
+      frameWidth: 256,
+      frameHeight: 256
     });
 
     // ===== PERSONNAGES =====
@@ -44,22 +44,33 @@ export default class gameplay3 extends Phaser.Scene {
       this.load.audio("SonPiece", "src/assets/SonPiece.mp3");
     }
 
-    if (!this.cache.audio.exists("SonManger")) {
-      this.load.audio("SonManger", "src/assets/SonManger.mp3");
-    }
-
     if (!this.cache.audio.exists("SonGameOver")) {
       this.load.audio("SonGameOver", "src/assets/SonGameOver.mp3");
     }
   }
 
   create() {
+    // ===== SECURITE REGISTRY =====
+    if (this.registry.get("money") === undefined) {
+      this.registry.set("money", 0);
+    }
+
+    if (this.registry.get("selectedSkin") === undefined) {
+      this.registry.set("selectedSkin", "zombie");
+    }
+
+    if (this.registry.get("coinMultiplierReady") === undefined) {
+      this.registry.set("coinMultiplierReady", false);
+    }
+
+    if (this.registry.get("extraLifeReady") === undefined) {
+      this.registry.set("extraLifeReady", false);
+    }
+
+    // ===== VARIABLES =====
     this.isGameOver = false;
     this.speed = 250;
-    this.jumpPower = -500;
-    this.hordeCount = 1;
-    this.followers = [];
-    this.trail = [];
+    this.jumpPower = 430; // force du saut
 
     this.extraLives = this.registry.get("extraLifeReady") ? 1 : 0;
     this.registry.set("extraLifeReady", false);
@@ -67,6 +78,13 @@ export default class gameplay3 extends Phaser.Scene {
     this.coinMultiplierActive = this.registry.get("coinMultiplierReady");
     this.registry.set("coinMultiplierReady", false);
     this.coinMultiplierEndTime = 0;
+
+    // ===== SYSTEME DE VAGUES =====
+    this.waveNumber = 1;
+    this.coinsPerWave = 10;
+    this.bombsThisWave = 2;
+    this.coinsCollectedThisWave = 0;
+    this.isSpawningNextWave = false;
 
     // ===== MUSIQUE =====
     this.gameMusic = this.sound.get("SonJeu") || this.sound.add("SonJeu", {
@@ -111,17 +129,13 @@ export default class gameplay3 extends Phaser.Scene {
 
     this.cameras.main.setBackgroundColor("#000000");
 
-    // ===== FOND LE PLUS LOIN =====
-    // Celui-là est étiré pour remplir l'écran
+    // ===== FOND =====
     this.bgLayer = this.add.image(screenWidth / 2, screenHeight / 2, "bg3");
     this.bgLayer.setScrollFactor(0, 0);
     this.bgLayer.setDisplaySize(screenWidth, screenHeight);
     this.bgLayer.setDepth(-30);
 
-    // ===== PARALLAX 0.20 =====
-    // Hauteur normale, pas étirée verticalement
     const backImg = this.textures.get("backGold3").getSourceImage();
-
     this.backLayer = this.add.tileSprite(
       0,
       screenHeight - backImg.height - 40,
@@ -133,10 +147,7 @@ export default class gameplay3 extends Phaser.Scene {
     this.backLayer.setScrollFactor(0, 0);
     this.backLayer.setDepth(-20);
 
-    // ===== PARALLAX 0.35 =====
-    // Hauteur normale, pas étirée verticalement
     const goldImg = this.textures.get("gold3").getSourceImage();
-
     this.frontBgLayer = this.add.tileSprite(
       0,
       screenHeight - goldImg.height - 20,
@@ -148,7 +159,7 @@ export default class gameplay3 extends Phaser.Scene {
     this.frontBgLayer.setScrollFactor(0, 0);
     this.frontBgLayer.setDepth(-10);
 
-    // ===== LAYER TILED =====
+    // ===== SOL =====
     this.groundLayer = this.map.createLayer(tiledLayerName, [mapTileset], 0, 0);
 
     if (!this.groundLayer) {
@@ -164,57 +175,59 @@ export default class gameplay3 extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
 
     // ===== JOUEUR =====
-    let spawnX = 100;
-    let spawnY = 300;
+    const spawnX = 120;
+    const spawnY = 350;
 
     const skin = this.registry.get("selectedSkin");
     const playerTexture = skin === "zombie" ? "zombie" : "soldatzombie";
 
     this.player = this.physics.add.sprite(spawnX, spawnY, playerTexture);
     this.player.setScale(1.1);
-    this.player.setCollideWorldBounds(false);
+    this.player.setCollideWorldBounds(true);
     this.player.setBounce(0);
-    this.player.body.setSize(60, 70);
-    this.player.body.setOffset(40, 10);
     this.player.setDepth(20);
-    this.player.setFlipX(true);
+
+    if (skin === "zombie") {
+      this.player.body.setSize(90, 75);
+      this.player.body.setOffset(50, 12);
+    } else {
+      this.player.body.setSize(60, 70);
+      this.player.body.setOffset(40, 10);
+    }
 
     this.physics.add.collider(this.player, this.groundLayer);
 
     this.createAnimations();
     this.createCoinAnimation();
-    this.createHumanAnimation();
+    this.createBombAnimation();
 
     if (skin === "zombie") {
-      this.player.anims.play("run_zombie", true);
+      this.player.anims.play("idle_zombie", true);
     } else {
-      this.player.anims.play("run_soldat", true);
+      this.player.anims.play("idle_soldat", true);
     }
 
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
 
     // ===== CONTROLES =====
     this.cursors = this.input.keyboard.createCursorKeys();
-    this.keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.keyQ = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
+    this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+    this.keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+    this.keyZ = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z); // saut clavier AZERTY
+    this.keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE); // saut espace
     this.keyR = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
     this.keyEsc = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
 
     // ===== GROUPES =====
-    this.coins = this.physics.add.group({
-      allowGravity: false,
-      immovable: true
-    });
+    this.coins = this.physics.add.group();
+    this.bombs = this.physics.add.group();
 
-    this.humans = this.physics.add.group({
-      allowGravity: false,
-      immovable: true
-    });
-
-    this.placeCoins();
-    this.placeHumans();
+    this.physics.add.collider(this.coins, this.groundLayer);
+    this.physics.add.collider(this.bombs, this.groundLayer);
 
     this.physics.add.overlap(this.player, this.coins, this.collectCoin, null, this);
-    this.physics.add.overlap(this.player, this.humans, this.eatHuman, null, this);
+    this.physics.add.overlap(this.player, this.bombs, this.hitBomb, null, this);
 
     // ===== UI =====
     this.moneyText = this.add.text(20, 20, "Argent : " + this.registry.get("money"), {
@@ -225,7 +238,7 @@ export default class gameplay3 extends Phaser.Scene {
       strokeThickness: 5
     }).setScrollFactor(0).setDepth(100);
 
-    this.hordeText = this.add.text(20, 55, "Horde : " + this.hordeCount, {
+    this.livesText = this.add.text(20, 55, "Vies : " + (1 + this.extraLives), {
       fontSize: "24px",
       color: "#ffffff",
       fontStyle: "bold",
@@ -233,7 +246,7 @@ export default class gameplay3 extends Phaser.Scene {
       strokeThickness: 5
     }).setScrollFactor(0).setDepth(100);
 
-    this.livesText = this.add.text(20, 90, "Vies : " + (1 + this.extraLives), {
+    this.waveText = this.add.text(20, 90, "Vague : 1", {
       fontSize: "24px",
       color: "#ffffff",
       fontStyle: "bold",
@@ -241,27 +254,52 @@ export default class gameplay3 extends Phaser.Scene {
       strokeThickness: 5
     }).setScrollFactor(0).setDepth(100);
 
-    this.multiplierText = this.add.text(20, 125, "", {
-      fontSize: "22px",
+    this.objectiveText = this.add.text(20, 125, "Pieces : 0 / 10", {
+      fontSize: "24px",
       color: "#ffe66d",
       fontStyle: "bold",
       stroke: "#000000",
       strokeThickness: 5
     }).setScrollFactor(0).setDepth(100);
 
-    this.infoText = this.add.text(20, 160, "ESPACE / HAUT = SAUT", {
+    this.bombText = this.add.text(20, 160, "Bombes : 2", {
+      fontSize: "22px",
+      color: "#ff8a8a",
+      fontStyle: "bold",
+      stroke: "#000000",
+      strokeThickness: 5
+    }).setScrollFactor(0).setDepth(100);
+
+    this.multiplierText = this.add.text(20, 195, "", {
+      fontSize: "22px",
+      color: "#9ef0ff",
+      fontStyle: "bold",
+      stroke: "#000000",
+      strokeThickness: 5
+    }).setScrollFactor(0).setDepth(100);
+
+    this.infoText = this.add.text(20, 230, "GAUCHE / DROITE = SE DEPLACER | Z / ESPACE = SAUTER", {
       fontSize: "18px",
       color: "#ffffff",
       stroke: "#000000",
       strokeThickness: 4
     }).setScrollFactor(0).setDepth(100);
 
-    this.backText = this.add.text(20, 185, "ECHAP = RETOUR", {
+    this.backText = this.add.text(20, 255, "ECHAP = RETOUR", {
       fontSize: "18px",
       color: "#ffffff",
       stroke: "#000000",
       strokeThickness: 4
     }).setScrollFactor(0).setDepth(100);
+
+    this.waveMessageText = this.add.text(400, 110, "", {
+      fontSize: "34px",
+      color: "#ffffff",
+      fontStyle: "bold",
+      stroke: "#000000",
+      strokeThickness: 6,
+      align: "center"
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(120);
 
     this.gameOverText = this.add.text(400, 230, "", {
       fontSize: "52px",
@@ -285,6 +323,21 @@ export default class gameplay3 extends Phaser.Scene {
       this.coinMultiplierEndTime = this.time.now + 15000;
       this.multiplierText.setText("x2 PIECES : 15");
     }
+    returnToDoors() {
+  // stop musique si elle tourne
+  if (this.gameMusic && this.gameMusic.isPlaying) {
+    this.gameMusic.stop();
+  }
+
+  // reset éventuel (optionnel)
+  this.isGameOver = false;
+
+  // changement de scène
+  this.scene.start("choixPortes");
+}
+
+    // ===== 1ERE VAGUE =====
+    this.startWave();
   }
 
   createAnimations() {
@@ -301,7 +354,8 @@ export default class gameplay3 extends Phaser.Scene {
       this.anims.create({
         key: "idle_zombie",
         frames: [{ key: "zombie", frame: 0 }],
-        frameRate: 1
+        frameRate: 1,
+        repeat: -1
       });
     }
 
@@ -318,7 +372,8 @@ export default class gameplay3 extends Phaser.Scene {
       this.anims.create({
         key: "idle_soldat",
         frames: [{ key: "soldatzombie", frame: 0 }],
-        frameRate: 1
+        frameRate: 1,
+        repeat: -1
       });
     }
   }
@@ -334,53 +389,97 @@ export default class gameplay3 extends Phaser.Scene {
     }
   }
 
-  createHumanAnimation() {
-    if (!this.anims.exists("human_idle")) {
+  createBombAnimation() {
+    if (!this.anims.exists("bomb_idle")) {
       this.anims.create({
-        key: "human_idle",
-        frames: this.anims.generateFrameNumbers("humain", { start: 0, end: 3 }),
+        key: "bomb_idle",
+        frames: this.anims.generateFrameNumbers("bomb", { start: 0, end: 5 }),
         frameRate: 6,
         repeat: -1
       });
     }
+
+    if (!this.anims.exists("bomb_explode")) {
+      this.anims.create({
+        key: "bomb_explode",
+        frames: this.anims.generateFrameNumbers("bomb", { start: 6, end: 23 }),
+        frameRate: 14,
+        repeat: 0
+      });
+    }
   }
 
-  placeCoins() {
-    const coinPositions = [
-      [450, 420],
-      [520, 420],
-      [590, 420],
-      [1100, 360],
-      [1170, 360],
-      [1800, 300],
-      [1870, 300]
-    ];
+  startWave() {
+    this.coinsCollectedThisWave = 0;
+    this.objectiveText.setText("Pieces : 0 / " + this.coinsPerWave);
+    this.waveText.setText("Vague : " + this.waveNumber);
+    this.bombText.setText("Bombes : " + this.bombsThisWave);
 
-    coinPositions.forEach((pos) => {
-      const coin = this.coins.create(pos[0], pos[1], "piece", 0);
-      coin.setOrigin(0.5, 1);
-      coin.setScale(1.8);
-      coin.setDepth(30);
-      coin.anims.play("coin_spin", true);
-    });
+    this.showWaveMessage(
+      "VAGUE " + this.waveNumber + "\n" +
+      this.coinsPerWave + " pieces - " + this.bombsThisWave + " bombes"
+    );
+
+    this.spawnFallingCoins(this.coinsPerWave);
+    this.spawnFallingBombs(this.bombsThisWave);
   }
 
-  placeHumans() {
-    const humanPositions = [
-      [900, 520],
-      [1600, 520],
-      [2400, 520]
-    ];
+  spawnFallingCoins(count) {
+    const leftLimit = 80;
+    const rightLimit = this.map.widthInPixels - 80;
 
-    humanPositions.forEach((pos) => {
-      const human = this.humans.create(pos[0], pos[1], "humain", 0);
-      human.setOrigin(0.5, 1);
-      human.setScale(2.2);
-      human.setDepth(30);
-      human.setFlipX(true);
-      human.body.setAllowGravity(false);
-      human.body.setImmovable(true);
-      human.anims.play("human_idle", true);
+    for (let i = 0; i < count; i++) {
+      this.time.delayedCall(i * 350, () => {
+        if (this.isGameOver) return;
+
+        const x = Phaser.Math.Between(leftLimit, rightLimit);
+        const y = Phaser.Math.Between(-300, -50);
+
+        const coin = this.coins.create(x, y, "piece", 0);
+        coin.setScale(1.8);
+        coin.setDepth(30);
+        coin.body.setAllowGravity(true);
+        coin.body.setBounce(0);
+        coin.body.setVelocityY(Phaser.Math.Between(80, 180));
+        coin.body.setCollideWorldBounds(false);
+        coin.anims.play("coin_spin", true);
+      });
+    }
+  }
+
+  spawnFallingBombs(count) {
+    const leftLimit = 80;
+    const rightLimit = this.map.widthInPixels - 80;
+
+    for (let i = 0; i < count; i++) {
+      this.time.delayedCall(i * 250, () => {
+        if (this.isGameOver) return;
+
+        const x = Phaser.Math.Between(leftLimit, rightLimit);
+        const y = Phaser.Math.Between(-500, -100);
+
+        const bomb = this.bombs.create(x, y, "bomb", 0);
+        bomb.setScale(0.22);
+        bomb.setDepth(30);
+        bomb.body.setAllowGravity(true);
+        bomb.body.setBounce(0);
+        bomb.body.setVelocityY(Phaser.Math.Between(100, 220));
+        bomb.body.setCollideWorldBounds(false);
+        bomb.anims.play("bomb_idle", true);
+        bomb.hasExploded = false;
+      });
+    }
+  }
+
+  showWaveMessage(message) {
+    this.waveMessageText.setText(message);
+
+    if (this.waveMessageTimer) {
+      this.waveMessageTimer.remove(false);
+    }
+
+    this.waveMessageTimer = this.time.delayedCall(1800, () => {
+      this.waveMessageText.setText("");
     });
   }
 
@@ -393,41 +492,55 @@ export default class gameplay3 extends Phaser.Scene {
       value = 2;
     }
 
-    const currentMoney = this.registry.get("money");
+    const currentMoney = this.registry.get("money") || 0;
     this.registry.set("money", currentMoney + value);
     this.moneyText.setText("Argent : " + this.registry.get("money"));
+
+    this.coinsCollectedThisWave += 1;
+    this.objectiveText.setText("Pieces : " + this.coinsCollectedThisWave + " / " + this.coinsPerWave);
+
+    if (this.coinsCollectedThisWave >= this.coinsPerWave && !this.isSpawningNextWave) {
+      this.launchNextWave();
+    }
   }
 
-  eatHuman(player, human) {
-    human.destroy();
-    this.sound.play("SonManger", { volume: 0.8 });
+  launchNextWave() {
+    this.isSpawningNextWave = true;
 
-    this.hordeCount += 1;
-    this.hordeText.setText("Horde : " + this.hordeCount);
+    this.time.delayedCall(1200, () => {
+      if (this.isGameOver) return;
 
-    const skin = this.registry.get("selectedSkin");
-    const followerTexture = skin === "zombie" ? "zombie" : "soldatzombie";
+      this.coins.clear(true, true);
+      this.bombs.clear(true, true);
 
-    const follower = this.add.sprite(player.x - this.hordeCount * 20, player.y, followerTexture);
-    follower.setScale(1.0);
-    follower.setDepth(20);
-    follower.setFlipX(true);
+      this.waveNumber += 1;
+      this.bombsThisWave *= 2;
 
-    if (skin === "zombie") {
-      follower.anims.play("run_zombie", true);
-    } else {
-      follower.anims.play("run_soldat", true);
-    }
+      this.startWave();
+      this.isSpawningNextWave = false;
+    });
+  }
 
-    this.followers.push(follower);
+  hitBomb(player, bomb) {
+    if (this.isGameOver || bomb.hasExploded) return;
+
+    bomb.hasExploded = true;
+    bomb.body.enable = false;
+
+    bomb.play("bomb_explode");
+
+    bomb.once("animationcomplete", () => {
+      bomb.destroy();
+      this.loseLifeOrGameOver("Tu as touche une bombe");
+    });
   }
 
   loseLifeOrGameOver(reasonText) {
     if (this.extraLives > 0) {
       this.extraLives -= 1;
       this.livesText.setText("Vies : " + (1 + this.extraLives));
-      this.player.setPosition(this.player.x - 120, this.player.y - 100);
       this.player.setVelocity(0, 0);
+      this.player.setPosition(this.player.x, this.player.y - 60);
       return;
     }
 
@@ -457,24 +570,6 @@ export default class gameplay3 extends Phaser.Scene {
     this.subText.setText(subtitle);
   }
 
-  updateFollowers() {
-    this.trail.push({ x: this.player.x, y: this.player.y });
-
-    if (this.trail.length > 500) {
-      this.trail.shift();
-    }
-
-    for (let i = 0; i < this.followers.length; i++) {
-      const index = Math.max(0, this.trail.length - 1 - (i + 1) * 8);
-      const point = this.trail[index];
-
-      if (point) {
-        this.followers[i].x = point.x;
-        this.followers[i].y = point.y;
-      }
-    }
-  }
-
   updateMultiplierUI() {
     if (this.coinMultiplierActive) {
       const remaining = Math.max(
@@ -491,38 +586,34 @@ export default class gameplay3 extends Phaser.Scene {
     }
   }
 
-  update() {
-    if (Phaser.Input.Keyboard.JustDown(this.keyEsc)) {
-      if (this.gameMusic && this.gameMusic.isPlaying) {
-        this.gameMusic.stop();
-      }
-      this.scene.start("choixPortes");
-      return;
-    }
+  updatePlayerMovement() {
+    let moving = false;
 
-    if (this.isGameOver) {
-      if (Phaser.Input.Keyboard.JustDown(this.keyR)) {
-        this.scene.restart();
-      }
-      return;
-    }
-
-    this.player.setVelocityX(this.speed);
-
-    const wantJump =
-      Phaser.Input.Keyboard.JustDown(this.cursors.up) ||
-      Phaser.Input.Keyboard.JustDown(this.keySpace);
-
-    if (wantJump && this.player.body.blocked.down) {
-      this.player.setVelocityY(this.jumpPower);
-    }
-
-    if (this.player.body.velocity.y !== 0) {
-      this.player.anims.stop();
-      this.player.setFrame(0);
+    if (this.cursors.left.isDown || this.keyQ.isDown || this.keyA.isDown) {
+      this.player.setVelocityX(-this.speed);
+      this.player.setFlipX(false);
+      moving = true;
+    } else if (this.cursors.right.isDown || this.keyD.isDown) {
+      this.player.setVelocityX(this.speed);
+      this.player.setFlipX(true);
+      moving = true;
     } else {
-      const skin = this.registry.get("selectedSkin");
+      this.player.setVelocityX(0);
+    }
 
+    // ===== SAUT =====
+    if (
+      (Phaser.Input.Keyboard.JustDown(this.cursors.up) ||
+        Phaser.Input.Keyboard.JustDown(this.keyZ) ||
+        Phaser.Input.Keyboard.JustDown(this.keySpace)) &&
+      this.player.body.blocked.down
+    ) {
+      this.player.setVelocityY(-this.jumpPower);
+    }
+
+    const skin = this.registry.get("selectedSkin");
+
+    if (moving) {
       if (skin === "zombie") {
         if (!this.player.anims.isPlaying || this.player.anims.currentAnim.key !== "run_zombie") {
           this.player.anims.play("run_zombie", true);
@@ -532,7 +623,27 @@ export default class gameplay3 extends Phaser.Scene {
           this.player.anims.play("run_soldat", true);
         }
       }
+    } else {
+      if (skin === "zombie") {
+        if (!this.player.anims.isPlaying || this.player.anims.currentAnim.key !== "idle_zombie") {
+          this.player.anims.play("idle_zombie", true);
+        }
+      } else {
+        if (!this.player.anims.isPlaying || this.player.anims.currentAnim.key !== "idle_soldat") {
+          this.player.anims.play("idle_soldat", true);
+        }
+      }
     }
+  }
+
+  update() {
+    if (Phaser.Input.Keyboard.JustDown(this.keyEsc)) {
+  this.returnToDoors();
+  return;
+}
+
+    this.updatePlayerMovement();
+    this.updateMultiplierUI();
 
     const camX = this.cameras.main.scrollX;
 
@@ -544,24 +655,8 @@ export default class gameplay3 extends Phaser.Scene {
       this.frontBgLayer.tilePositionX = camX * 0.35;
     }
 
-    this.player.setDepth(20);
-
-    this.updateFollowers();
-    this.updateMultiplierUI();
-
     if (this.player.y > this.map.heightInPixels + 100) {
       this.loseLifeOrGameOver("Tu es tombe dans un trou");
-    }
-
-    if (this.player.x >= this.map.widthInPixels - 120) {
-      this.player.setVelocityX(0);
-      this.isGameOver = true;
-      this.gameOverText.setText("NIVEAU 3 TERMINE");
-      this.subText.setText("ECHAP = retour aux portes");
-
-      if (this.gameMusic && this.gameMusic.isPlaying) {
-        this.gameMusic.stop();
-      }
     }
   }
 }

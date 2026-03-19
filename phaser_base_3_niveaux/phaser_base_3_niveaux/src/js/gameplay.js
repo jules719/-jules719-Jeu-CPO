@@ -548,14 +548,13 @@ export default class gameplay extends Phaser.Scene {
   eatHuman(player, human) {
     human.destroy();
 
-    const sonManger = this.sound.add("SonManger", { volume: 0.8 });
-    sonManger.play();
+    const sonManger = this.sound.play("SonManger", { volume: 0.8 });
 
-    this.time.delayedCall(2000, () => {
-      if (sonManger && sonManger.isPlaying) {
-        sonManger.stop();
-      }
-    });
+this.time.delayedCall(2000, () => {
+  if (sonManger) {
+    this.sound.stopByKey("SonManger");
+  }
+});
 
     this.hordeCount += 1;
     this.humansEaten += 1;
