@@ -571,24 +571,43 @@ this.doorMessageCooldown = false;
     this.showDoorMessage("La porte est ouverte !");
   }
 }
+findRespawnPoint(deathX) {
+  const respawnX = Math.max(100, deathX - 320);
+  let respawnY = 100;
 
-  loseLifeOrGameOver(reasonText) {
-    this.totalLives -= 1;
-    this.livesText.setText("Vies : " + this.totalLives);
+  for (let y = 0; y < this.map.heightInPixels; y += this.map.tileHeight) {
+    const tile = this.groundLayer.getTileAtWorldXY(respawnX, y, true);
 
-    if (this.totalLives > 0) {
-      this.player.setPosition(this.player.x - 120, this.player.y - 100);
-      this.player.setVelocity(0, 0);
-      return;
+    if (tile && tile.collides) {
+      respawnY = tile.pixelY - 60;
+      break;
     }
-
-    if (this.gameMusic && this.gameMusic.isPlaying) {
-      this.gameMusic.stop();
-    }
-
-    this.sound.play("SonGameOver", { volume: 1 });
-    this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
   }
+
+  return { x: respawnX, y: respawnY };
+}
+  loseLifeOrGameOver(reasonText) {
+  const deathX = this.player.x;
+
+  this.totalLives -= 1;
+  this.livesText.setText("Vies : " + this.totalLives);
+
+  if (this.totalLives > 0) {
+    const respawn = this.findRespawnPoint(deathX);
+
+    this.player.setPosition(respawn.x, respawn.y);
+    this.player.setVelocity(0, 0);
+
+    return;
+  }
+
+  if (this.gameMusic && this.gameMusic.isPlaying) {
+    this.gameMusic.stop();
+  }
+
+  this.sound.play("SonGameOver", { volume: 1 });
+  this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
+}
 
   hitBomb(player, bomb) {
     if (this.isGameOver || bomb.hasExploded) return;
