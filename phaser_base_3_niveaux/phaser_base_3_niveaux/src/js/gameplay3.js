@@ -84,7 +84,6 @@ export default class gameplay3 extends Phaser.Scene {
     console.log("MAP3 layers :", this.map.layers.map(l => l.name));
     console.log("MAP3 tilesets :", this.map.tilesets.map(t => t.name));
 
-    // Prend automatiquement le 1er tileset et le 1er layer de la map
     const tiledTilesetName = this.map.tilesets.length > 0 ? this.map.tilesets[0].name : null;
     const tiledLayerName = this.map.layers.length > 0 ? this.map.layers[0].name : null;
 
@@ -113,28 +112,41 @@ export default class gameplay3 extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("#000000");
 
     // ===== FOND LE PLUS LOIN =====
+    // Celui-là est étiré pour remplir l'écran
     this.bgLayer = this.add.image(screenWidth / 2, screenHeight / 2, "bg3");
     this.bgLayer.setScrollFactor(0, 0);
     this.bgLayer.setDisplaySize(screenWidth, screenHeight);
     this.bgLayer.setDepth(-30);
 
     // ===== PARALLAX 0.20 =====
-    this.backLayer = this.add.tileSprite(0, 0, screenWidth, screenHeight, "backGold3");
+    // Hauteur normale, pas étirée verticalement
+    const backImg = this.textures.get("backGold3").getSourceImage();
+
+    this.backLayer = this.add.tileSprite(
+      0,
+      screenHeight - backImg.height - 40,
+      screenWidth,
+      backImg.height,
+      "backGold3"
+    );
     this.backLayer.setOrigin(0, 0);
     this.backLayer.setScrollFactor(0, 0);
     this.backLayer.setDepth(-20);
 
-    const backImg = this.textures.get("backGold3").getSourceImage();
-    this.backLayer.tileScaleY = screenHeight / backImg.height;
-
     // ===== PARALLAX 0.35 =====
-    this.frontBgLayer = this.add.tileSprite(0, 0, screenWidth, screenHeight, "gold3");
+    // Hauteur normale, pas étirée verticalement
+    const goldImg = this.textures.get("gold3").getSourceImage();
+
+    this.frontBgLayer = this.add.tileSprite(
+      0,
+      screenHeight - goldImg.height - 20,
+      screenWidth,
+      goldImg.height,
+      "gold3"
+    );
     this.frontBgLayer.setOrigin(0, 0);
     this.frontBgLayer.setScrollFactor(0, 0);
     this.frontBgLayer.setDepth(-10);
-
-    const goldImg = this.textures.get("gold3").getSourceImage();
-    this.frontBgLayer.tileScaleY = screenHeight / goldImg.height;
 
     // ===== LAYER TILED =====
     this.groundLayer = this.map.createLayer(tiledLayerName, [mapTileset], 0, 0);
@@ -506,11 +518,8 @@ export default class gameplay3 extends Phaser.Scene {
     }
 
     if (this.player.body.velocity.y !== 0) {
-      if (this.registry.get("selectedSkin") === "zombie") {
-        this.player.setFrame(0);
-      } else {
-        this.player.setFrame(0);
-      }
+      this.player.anims.stop();
+      this.player.setFrame(0);
     } else {
       const skin = this.registry.get("selectedSkin");
 
