@@ -116,7 +116,8 @@ export default class gameplay extends Phaser.Scene {
     this.followers = [];
     this.trail = [];
     this.doorUnlocked = false;
-    this.doorMessageCooldown = false;
+this.doorOpening = false;
+this.doorMessageCooldown = false;
 
     // ===== BONUS ARMURERIE =====
     this.totalLives = this.registry.get("extraLifeReady") ? 2 : 1;
@@ -495,18 +496,12 @@ export default class gameplay extends Phaser.Scene {
 }
 
   updateDoorVisual() {
-    if (this.humansEaten >= this.requiredHumans) {
-      this.doorUnlocked = true;
-      this.doorGlow.setFillStyle(0x00ff99, 0.35);
-      this.doorRect.setFillStyle(0x2ecc71, 1);
-      this.doorLabel.setText("PORTE OUVERTE");
-    } else {
-      this.doorUnlocked = false;
-      this.doorGlow.setFillStyle(0xffd54a, 0.25);
-      this.doorRect.setFillStyle(0x6b3f1d, 1);
-      this.doorLabel.setText("PORTE FERMEE");
-    }
+  if (this.humansEaten >= this.requiredHumans) {
+    this.doorUnlocked = true;
+  } else {
+    this.doorUnlocked = false;
   }
+}
 
   showDoorMessage(message) {
     this.doorInfoText.setText(message);
@@ -659,11 +654,11 @@ this.doorOpening = false;
 
   this.followers.forEach((follower) => {
     if (skin === "zombie") {
-      follower.setFlipX(true);
+      follower.setFlipX(false);
       follower.setScale(1.25);
       follower.setFrame(0);
     } else {
-      follower.setScale(1.25);
+      follower.setScale(1.0);
       follower.anims.play("idle_soldat", true);
     }
   });
