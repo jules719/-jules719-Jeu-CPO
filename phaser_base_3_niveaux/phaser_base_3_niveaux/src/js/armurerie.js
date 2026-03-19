@@ -260,20 +260,21 @@ export default class armurerie extends Phaser.Scene {
     }).setOrigin(0.5);
 
     extraLifeBtn.on("pointerdown", () => {
-      if (this.registry.get("extraLifeReady")) {
-        this.showMessage("Bonus déjà acheté");
-        return;
-      }
+  if (this.registry.get("extraLifeReady")) {
+    this.showMessage("Bonus déjà acheté");
+    return;
+  }
 
-      if (this.buyItem(this.prix2Vies)) {
-        this.registry.set("extraLifeReady", true);
-        this.sound.play("SonVies", { volume: 3 });
-        this.showMessage("Bonus 2 vies activé");
-        this.updateBonusVisual();
-      } else {
-        this.showMessage("Pas assez d'argent");
-      }
-    });
+  if (this.buyItem(this.prix2Vies)) {
+    this.registry.set("extraLifeReady", true);
+    this.registry.set("remainingLives", 2); // important
+    this.sound.play("SonVies", { volume: 3 });
+    this.showMessage("Bonus 2 vies activé");
+    this.updateBonusVisual();
+  } else {
+    this.showMessage("Pas assez d'argent");
+  }
+});
 
     // ===== INFOS =====
     this.skinInfoText = this.add.text(400, 540, "", {

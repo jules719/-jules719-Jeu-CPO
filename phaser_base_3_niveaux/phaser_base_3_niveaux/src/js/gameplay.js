@@ -537,14 +537,13 @@ this.doorMessageCooldown = false;
   eatHuman(player, human) {
     human.destroy();
 
-    const sonManger = this.sound.add("SonManger", { volume: 0.8 });
-    sonManger.play();
+    const sonManger = this.sound.play("SonManger", { volume: 0.8 });
 
-    this.time.delayedCall(2000, () => {
-      if (sonManger && sonManger.isPlaying) {
-        sonManger.stop();
-      }
-    });
+this.time.delayedCall(2000, () => {
+  if (sonManger) {
+    this.sound.stopByKey("SonManger");
+  }
+});
 
   this.hordeCount += 1;
   this.humansEaten += 1;
@@ -590,10 +589,12 @@ findRespawnPoint(deathX) {
 
   return { x: respawnX, y: respawnY };
 }
-  loseLifeOrGameOver(reasonText) {
-    this.totalLives = Math.max(0, this.totalLives - 1);
-    this.livesText.setText("Vies : " + this.totalLives);
-    this.registry.set("remainingLives", this.totalLives);
+ loseLifeOrGameOver(reasonText) {
+  const deathX = this.player.x;
+
+  this.totalLives = Math.max(0, this.totalLives - 1);
+  this.livesText.setText("Vies : " + this.totalLives);
+  this.registry.set("remainingLives", this.totalLives);
 
   if (this.totalLives > 0) {
     const respawn = this.findRespawnPoint(deathX);
@@ -611,7 +612,6 @@ findRespawnPoint(deathX) {
   this.sound.play("SonGameOver", { volume: 1 });
   this.triggerGameOver("GAME OVER", reasonText + "\nR = recommencer");
 }
-
   hitBomb(player, bomb) {
     if (this.isGameOver || bomb.hasExploded) return;
 
